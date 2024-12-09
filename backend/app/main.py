@@ -53,5 +53,5 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
 @app.get("/")
 async def root():
-    return {"message": "API XML Processor está funcionando"} 
+    return {"message": "API XML Processor está funcionando!"} 
 
