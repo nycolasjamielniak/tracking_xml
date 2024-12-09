@@ -6,64 +6,99 @@ from datetime import datetime
 class NFXMLProcessor:
     def __init__(self, xml_content: str):
         self.root = ET.fromstring(xml_content)
-        self.namespace = self._get_namespace()
+        # Obtém o namespace da NFe
+        self.ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
-    def _get_namespace(self) -> str:
-        # Extrai o namespace do XML (comum em NFes)
-        if '}' in self.root.tag:
-            return self.root.tag.split('}')[0] + '}'
-        return ''
-
-    def _find_with_ns(self, path: str) -> Optional[ET.Element]:
-        # Busca elementos considerando o namespace
-        return self.root.find(f'.//{self.namespace}{path}')
+    def _find_with_ns(self, element: ET.Element, path: str) -> Optional[ET.Element]:
+        """Busca elementos considerando o namespace da NFe"""
+        return element.find(f'.//nfe:{path}', self.ns)
 
     def validate(self) -> bool:
-        # Valida se os campos obrigatórios existem
-        required_fields = [
-            'emit/CNPJ', 'emit/xNome',  # Remetente
-            'dest/CNPJ', 'dest/xNome',  # Destinatário
-            'nNF',                      # Número da NF
-            'vol/pesoB',                # Peso Bruto
-            'vol/qVol'                  # Volume
-        ]
-        
-        for field in required_fields:
-            if not self._find_with_ns(field):
-                return False
-        return True
+        """Valida se os campos obrigatórios existem"""
+        try:
+            nfe = self.root.find('.//nfe:NFe', self.ns)
+            infNFe = nfe.find('.//nfe:infNFe', self.ns)
+            
+            # Campos obrigatórios
+            required_fields = [
+                ('emit', ['CNPJ', 'xNome']),           # Remetente
+                ('dest', ['CNPJ', 'xNome']),           # Destinatário
+                ('ide/nNF',),                          # Número da NF
+                ('transp/vol', ['qVol', 'pesoB']),     # Volume e Peso
+            ]
+            
+            for field in required_fields:
+                base_path = field[0]
+                if len(field) > 1:
+                    # Verifica campos aninhados
+                    base_element = self._find_with_ns(infNFe, base_path)
+                    if not base_element:
+                        return False
+                    for subfield in field[1]:
+                        if self._find_with_ns(base_element, subfield) is None:
+                            return False
+                else:
+                    # Verifica campo direto
+                    if self._find_with_ns(infNFe, base_path) is None:
+                        return False
+            
+            return True
+            
+        except (ET.ParseError, AttributeError):
+            return False
 
     def extract_data(self) -> Dict[str, Any]:
-        # Extrai os dados relevantes do XML
+        """Extrai os dados relevantes do XML da NFe"""
+        nfe = self.root.find('.//nfe:NFe', self.ns)
+        infNFe = nfe.find('.//nfe:infNFe', self.ns)
+        
+        # Função auxiliar para extrair texto de um elemento
+        def get_text(element: ET.Element, path: str) -> str:
+            el = self._find_with_ns(element, path)
+            return el.text if el is not None else ''
+
+        # Extrai dados do emitente
+        emit = self._find_with_ns(infNFe, 'emit')
+        enderEmit = self._find_with_ns(emit, 'enderEmit')
+        
+        # Extrai dados do destinatário
+        dest = self._find_with_ns(infNFe, 'dest')
+        enderDest = self._find_with_ns(dest, 'enderDest')
+        
+        # Extrai dados do transporte
+        transp = self._find_with_ns(infNFe, 'transp')
+        vol = self._find_with_ns(transp, 'vol')
+
         return {
-            "numeroNF": self._find_with_ns('nNF').text,
+            "numeroNF": get_text(infNFe, 'ide/nNF'),
             "remetente": {
-                "cnpj": self._find_with_ns('emit/CNPJ').text,
-                "nome": self._find_with_ns('emit/xNome').text,
+                "cnpj": get_text(emit, 'CNPJ'),
+                "nome": get_text(emit, 'xNome'),
                 "endereco": {
-                    "logradouro": self._find_with_ns('emit/enderEmit/xLgr').text,
-                    "numero": self._find_with_ns('emit/enderEmit/nro').text,
-                    "bairro": self._find_with_ns('emit/enderEmit/xBairro').text,
-                    "municipio": self._find_with_ns('emit/enderEmit/xMun').text,
-                    "uf": self._find_with_ns('emit/enderEmit/UF').text,
-                    "cep": self._find_with_ns('emit/enderEmit/CEP').text
+                    "logradouro": get_text(enderEmit, 'xLgr'),
+                    "numero": get_text(enderEmit, 'nro'),
+                    "bairro": get_text(enderEmit, 'xBairro'),
+                    "municipio": get_text(enderEmit, 'xMun'),
+                    "uf": get_text(enderEmit, 'UF'),
+                    "cep": get_text(enderEmit, 'CEP')
                 }
             },
             "destinatario": {
-                "cnpj": self._find_with_ns('dest/CNPJ').text,
-                "nome": self._find_with_ns('dest/xNome').text,
+                "cnpj": get_text(dest, 'CNPJ'),
+                "nome": get_text(dest, 'xNome'),
                 "endereco": {
-                    "logradouro": self._find_with_ns('dest/enderDest/xLgr').text,
-                    "numero": self._find_with_ns('dest/enderDest/nro').text,
-                    "bairro": self._find_with_ns('dest/enderDest/xBairro').text,
-                    "municipio": self._find_with_ns('dest/enderDest/xMun').text,
-                    "uf": self._find_with_ns('dest/enderDest/UF').text,
-                    "cep": self._find_with_ns('dest/enderDest/CEP').text
+                    "logradouro": get_text(enderDest, 'xLgr'),
+                    "numero": get_text(enderDest, 'nro'),
+                    "bairro": get_text(enderDest, 'xBairro'),
+                    "municipio": get_text(enderDest, 'xMun'),
+                    "uf": get_text(enderDest, 'UF'),
+                    "cep": get_text(enderDest, 'CEP')
                 }
             },
-            "peso": float(self._find_with_ns('vol/pesoB').text),
-            "volume": int(self._find_with_ns('vol/qVol').text),
-            "valor": float(self._find_with_ns('vNF').text)
+            "transporte": {
+                "volume": int(get_text(vol, 'qVol') or 0),
+                "pesoBruto": float(get_text(vol, 'pesoB') or 0)
+            }
         }
 
 async def process_xml_files(files: List[UploadFile]) -> List[Dict[str, Any]]:
@@ -97,9 +132,7 @@ async def process_xml_files(files: List[UploadFile]) -> List[Dict[str, Any]]:
     return results
 
 def create_trip_structure(processed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Cria a estrutura da viagem a partir dos dados processados
-    """
+    """Cria a estrutura da viagem a partir dos dados processados"""
     # Agrupa notas por município para criar pontos de parada
     stops = {}
     for nf in processed_data:
@@ -113,9 +146,8 @@ def create_trip_structure(processed_data: List[Dict[str, Any]]) -> Dict[str, Any
             }
         stops[coleta_key]["notas"].append({
             "numeroNF": nf["numeroNF"],
-            "peso": nf["peso"],
-            "volume": nf["volume"],
-            "valor": nf["valor"]
+            "volume": nf["transporte"]["volume"],
+            "pesoBruto": nf["transporte"]["pesoBruto"]
         })
         
         # Entrega
@@ -128,12 +160,10 @@ def create_trip_structure(processed_data: List[Dict[str, Any]]) -> Dict[str, Any
             }
         stops[entrega_key]["notas"].append({
             "numeroNF": nf["numeroNF"],
-            "peso": nf["peso"],
-            "volume": nf["volume"],
-            "valor": nf["valor"]
+            "volume": nf["transporte"]["volume"],
+            "pesoBruto": nf["transporte"]["pesoBruto"]
         })
 
-    # Cria a estrutura final da viagem
     return {
         "id": datetime.now().strftime("%Y%m%d%H%M%S"),
         "status": "PENDENTE",

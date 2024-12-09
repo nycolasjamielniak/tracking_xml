@@ -2,5 +2,6 @@ fastapi>=0.68.0
 python-multipart  # needed for handling file uploads
 uvicorn>=0.15.0  # ASGI server to run FastAPI
 pydantic>=2.4.2
-httpx>=0.24.0  # For async HTTP requests
+httpx>=0.25.2  # For async HTTP requests
 python-dotenv>=0.19.0  # For environment variables
+fastapi==0.109.0
