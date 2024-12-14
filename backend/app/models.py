@@ -16,15 +16,23 @@ class Driver(BaseModel):
 class Vehicle(BaseModel):
     plate: str
 
+class Transport(BaseModel):
+    volume: float
+    pesoBruto: float
+
 class Note(BaseModel):
     id: str
     numeroNF: str
+    chaveAcesso: str
+    transporte: Transport
 
 class Stop(BaseModel):
     type: str  # 'COLETA' ou 'ENTREGA'
     address: Address
     notes: List[Note]
     sequence: int
+    companyName: str
+    cnpj: str
 
 class Trip(BaseModel):
     id: Optional[str] = None

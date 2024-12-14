@@ -491,3 +491,37 @@ body {
   border-color: #0066cc;
   box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
 }
+
+/* Estilos para ações da viagem */
+.trip-actions {
+  padding: 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.matrix-cargo-button {
+  padding: 8px 16px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.matrix-cargo-button:hover:not(:disabled) {
+  background: #34495e;
+}
+
+.matrix-cargo-button:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}

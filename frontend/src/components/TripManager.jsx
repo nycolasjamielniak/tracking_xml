@@ -511,6 +511,65 @@ function TripManager({ processedData }) {
     setSelectedStopIndex(null)
   }
 
+  // Add validation function
+  const validateTripData = () => {
+    // Validate basic trip info
+    if (!currentTrip.client || !currentTrip.externalId) {
+      return false;
+    }
+
+    // Validate driver info
+    if (!currentTrip.driver.name || !currentTrip.driver.document) {
+      return false;
+    }
+
+    // Validate vehicle info
+    if (!currentTrip.vehicle.plate) {
+      return false;
+    }
+
+    // Validate stops
+    if (currentTrip.stops.length === 0) {
+      return false;
+    }
+
+    // Validate each stop has required data
+    return currentTrip.stops.every(stop => 
+      stop.companyName && 
+      stop.cnpj && 
+      stop.address.logradouro &&
+      stop.address.numero &&
+      stop.address.bairro &&
+      stop.address.municipio &&
+      stop.address.uf &&
+      stop.address.cep &&
+      stop.notes.length > 0
+    );
+  };
+
+  const handleGenerateMatrixCargoTrip = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/trips/matrix-cargo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(currentTrip),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao gerar viagem Matrix Cargo');
+      }
+
+      const result = await response.json();
+      alert('Viagem Matrix Cargo gerada com sucesso!');
+      console.log('Matrix Cargo response:', result);
+    } catch (error) {
+      alert(`Erro ao gerar viagem Matrix Cargo: ${error.message}`);
+      console.error('Error:', error);
+    }
+  };
+
   return (
     <div className="trip-manager">
       {/* Header com informações da viagem */}
@@ -565,6 +624,17 @@ function TripManager({ processedData }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Add Matrix Cargo button near the trip info section */}
+      <div className="trip-actions">
+        <button
+          className="matrix-cargo-button"
+          onClick={handleGenerateMatrixCargoTrip}
+          disabled={!validateTripData()}
+        >
+          Gerar Viagem Matrix Cargo
+        </button>
       </div>
 
       {/* Container para o conteúdo abaixo do header */}

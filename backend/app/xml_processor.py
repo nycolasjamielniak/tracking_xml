@@ -161,6 +161,9 @@ class NFXMLProcessor:
             ide = self._find_with_ns(infNFe, 'ide')
             numero_nf = get_text(ide, 'nNF') if ide is not None else ''
 
+            # Extrair a chave de acesso
+            chave_acesso = infNFe.attrib.get('Id', '').replace('NFe', '') if infNFe is not None else ''
+
             # Extrai dados com verificações
             emit = self._find_with_ns(infNFe, 'emit')
             if emit is None:
@@ -203,7 +206,8 @@ class NFXMLProcessor:
 
             # Monta o resultado
             result = {
-                "numeroNF": numero_nf,  # Usa o número da NF encontrado separadamente
+                "numeroNF": numero_nf,
+                "chaveAcesso": chave_acesso,
                 "remetente": {
                     "cnpj": get_text(emit, 'CNPJ'),
                     "nome": get_text(emit, 'xNome'),
