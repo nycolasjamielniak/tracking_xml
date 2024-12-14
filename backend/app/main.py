@@ -7,6 +7,10 @@ import os
 from datetime import datetime, timezone, timedelta
 from .models import Trip
 from .external_api import ExternalAPIClient
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from .database import get_db, IntegratedTrip
+import json
 
 app = FastAPI()
 
@@ -61,8 +65,20 @@ async def create_trip(trip: Trip):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/trips/matrix-cargo")
-async def create_matrix_cargo_trip(trip: Trip):
+async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
     try:
+        # Check if trip already exists in our database
+        existing_trip = db.query(IntegratedTrip).filter(
+            IntegratedTrip.external_id == trip.externalId
+        ).first()
+        
+        if existing_trip:
+            if existing_trip.status == 'success':
+                return existing_trip.matrix_cargo_response
+            # If previous attempt failed, update the existing record
+            db.delete(existing_trip)
+            db.commit()
+
         # Transform trip data to Matrix Cargo format
         matrix_cargo_data = {
             "externalId": trip.externalId,
@@ -147,13 +163,65 @@ async def create_matrix_cargo_trip(trip: Trip):
             ]
         }
 
-        # Send to Matrix Cargo API
-        result = await matrix_cargo_client.create_trip(matrix_cargo_data)
-        return result
+        try:
+            # Send to Matrix Cargo API
+            result = await matrix_cargo_client.create_trip(matrix_cargo_data)
+            
+            # Store the integration result
+            integrated_trip = IntegratedTrip(
+                external_id=trip.externalId,
+                trip_data=json.loads(trip.json()),
+                matrix_cargo_response=result,
+                status='success'
+            )
+            db.add(integrated_trip)
+            db.commit()
+            
+            return result
+
+        except HTTPException as api_error:
+            # Check if the error is due to duplicate trip
+            error_msg = str(api_error.detail)
+            if "Unique constraint failed" in error_msg and existing_trip:
+                # If it's a duplicate and we have a successful previous integration
+                return existing_trip.matrix_cargo_response
+            
+            # For other API errors, store the failure and re-raise
+            integrated_trip = IntegratedTrip(
+                external_id=trip.externalId,
+                trip_data=json.loads(trip.json()),
+                status='error',
+                error_message=error_msg
+            )
+            db.add(integrated_trip)
+            db.commit()
+            
+            raise
 
     except Exception as e:
+        # Store failed integration attempt if not already stored
+        try:
+            error_msg = str(e)
+            integrated_trip = IntegratedTrip(
+                external_id=trip.externalId,
+                trip_data=json.loads(trip.json()),
+                status='error',
+                error_message=error_msg
+            )
+            db.add(integrated_trip)
+            db.commit()
+        except Exception as db_error:
+            # If we can't store the error, log it but raise the original error
+            print(f"Failed to store error in database: {str(db_error)}")
+        
         raise HTTPException(
             status_code=500,
-            detail=f"Erro ao criar viagem no Matrix Cargo: {str(e)}"
+            detail=f"Erro ao criar viagem no Matrix Cargo: {error_msg}"
         )
+
+# Add new endpoint to get integration history
+@app.get("/trips/integration-history")
+async def get_integration_history(db: Session = Depends(get_db)):
+    trips = db.query(IntegratedTrip).order_by(IntegratedTrip.created_at.desc()).all()
+    return trips
 
