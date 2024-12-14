@@ -21,6 +21,27 @@ function App() {
                 <h2>Notas Fiscais Disponíveis</h2>
                 <span className="count-badge">{xmlData.processed_data.length} notas</span>
               </div>
+              <div className="right-section">
+                <h2>Frete</h2>
+                <div className="freight-info">
+                  <div className="freight-field">
+                    <label>Transportadora</label>
+                    <input type="text" placeholder="Buscar a transportadora" />
+                  </div>
+                  <div className="freight-field">
+                    <label>Cliente</label>
+                    <input type="text" placeholder="Buscar o cliente" />
+                  </div>
+                  <div className="freight-field">
+                    <label>Workspace</label>
+                    <input type="text" placeholder="Buscar o workspace" />
+                  </div>
+                  <div className="freight-field">
+                    <label>ID Externo</label>
+                    <input type="text" placeholder="00000" />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="content-body">
               <TripManager processedData={xmlData.processed_data} />

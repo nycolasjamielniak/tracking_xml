@@ -54,17 +54,9 @@ body {
 }
 
 /* Header com informações do frete */
-.content-header {
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
-  width: 100%;
-  padding: 12px 20px;
-}
-
-.content-header .right-section {
-  display: flex;
-  flex-direction: row;
-  gap: 15px;
+.content-header,
+.freight-info {
+  display: none;
 }
 
 /* Novo header para seção de notas */
@@ -92,40 +84,6 @@ body {
   color: #666;
 }
 
-/* Informações do frete */
-.freight-info {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  padding-top: 8px;
-}
-
-.freight-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.freight-field label {
-  font-size: 13px;
-  color: #666;
-  font-weight: 500;
-}
-
-.freight-field input {
-  padding: 8px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  background: white;
-}
-
-.freight-field input:focus {
-  outline: none;
-  border-color: #0066cc;
-  box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
-}
-
 /* Corpo principal */
 .content-body {
   flex: 1;
@@ -135,8 +93,8 @@ body {
 
 /* Layout do gerenciador */
 .trip-manager {
-  display: grid;
-  grid-template-columns: minmax(250px, 280px) 1fr;
+  display: flex;
+  flex-direction: column;
   width: 99%;
   height: 99%;
   margin: 0 auto;
@@ -144,7 +102,7 @@ body {
 
 /* Seção de notas */
 .notes-section {
-  height: 99%;
+  height: 100%;
   min-height: 0;
   border-right: 1px solid #e0e0e0;
   background: white;
@@ -197,10 +155,9 @@ body {
 
 /* Seção do formulário */
 .form-section-container {
-  height: 99%;
-  width: 99%;
-  margin: 0 auto;
+  height: 100%;
   overflow-y: auto;
+  padding-right: 15px;
 }
 
 .form-section {
@@ -284,15 +241,20 @@ body {
   background: #0052a3;
 }
 
-/* Novo container de informações da viagem */
-.trip-info-container {
+/* Novo estilo para o cabeçalho de informações da viagem */
+.trip-info-header {
   background: white;
-  border-radius: 6px;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 15px;
   margin-bottom: 15px;
+  width: 100%;
 }
 
 .trip-info-section {
+  background: #f8f9fa;
+  border-radius: 6px;
   padding: 15px;
+  width: 100%;
 }
 
 .trip-info-section h2 {
@@ -305,23 +267,28 @@ body {
 
 .trip-info-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 15px;
 }
 
-.info-field {
+/* Cliente ocupa duas colunas */
+.trip-info-grid .trip-field:first-child {
+  grid-column: span 2;
+}
+
+.trip-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.info-field label {
+.trip-field label {
   font-size: 13px;
   color: #666;
   font-weight: 500;
 }
 
-.info-field input {
+.trip-field input {
   padding: 8px;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -329,8 +296,18 @@ body {
   background: white;
 }
 
-.info-field input:focus {
+.trip-field input:focus {
   outline: none;
   border-color: #0066cc;
   box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
+}
+
+/* Container para o conteúdo abaixo do header */
+.trip-content {
+  display: grid;
+  grid-template-columns: minmax(250px, 280px) 1fr;
+  gap: 15px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }

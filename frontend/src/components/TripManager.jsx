@@ -321,191 +321,175 @@ function TripManager({ processedData }) {
 
   return (
     <div className="trip-manager">
-      {/* Seção de Notas (Esquerda) */}
-      <div className="notes-section">
-        <div className="notes-header">
-          <h2>Notas Disponíveis</h2>
-          <span className="count-badge">{processedData.length} notas</span>
-        </div>
-        <div className="xml-list">
-          {processedData.map(note => {
-            const isInUse = currentTrip.stops.some(stop => 
-              stop.notes.some(n => n.id === note.id)
-            )
-            
-            return (
-              <div key={note.id} className={`xml-item ${isInUse ? 'note-in-use' : ''}`}>
-                <div className="xml-item-header">
-                  <span className="nf-number">NF {note.numeroNF}</span>
-                  <input
-                    type="checkbox"
-                    checked={selectedNotes.has(note.id)}
-                    onChange={(e) => handleNoteSelection(note.id, e.target.checked)}
-                    disabled={isInUse}
-                  />
-                </div>
-                <div className="xml-item-details">
-                  <div className="nf-party">
-                    <span className="party-label">Remetente:</span>
-                    <span className="party-name">{note.remetente.nome}</span>
-                    <span className="party-location">
-                      {note.remetente.endereco.municipio} - {note.remetente.endereco.uf}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Seção Principal (Direita) */}
-      <div className="form-section-container">
-        {/* Novo container de informações da viagem */}
-        <div className="trip-info-container">
-          <div className="trip-info-section">
-            <h2>Informações da Viagem</h2>
-            <div className="trip-info-grid">
-              <div className="info-field">
-                <label>Transportadora</label>
-                <input
-                  type="text"
-                  placeholder="Buscar a transportadora"
-                  value={currentTrip.carrier}
-                  onChange={(e) => handleUpdateTripInfo('carrier', e.target.value)}
-                />
-              </div>
-              <div className="info-field">
-                <label>Cliente</label>
-                <input
-                  type="text"
-                  placeholder="Buscar o cliente"
-                  value={currentTrip.client}
-                  onChange={(e) => handleUpdateTripInfo('client', e.target.value)}
-                />
-              </div>
-              <div className="info-field">
-                <label>Workspace</label>
-                <input
-                  type="text"
-                  placeholder="Buscar o workspace"
-                  value={currentTrip.workspace}
-                  onChange={(e) => handleUpdateTripInfo('workspace', e.target.value)}
-                />
-              </div>
-              <div className="info-field">
-                <label>ID Externo</label>
-                <input
-                  type="text"
-                  placeholder="00000"
-                  value={currentTrip.externalId}
-                  onChange={(e) => handleUpdateTripInfo('externalId', e.target.value)}
-                />
-              </div>
-              <div className="info-field">
-                <label>Motorista</label>
-                <input
-                  type="text"
-                  placeholder="Nome do motorista"
-                  value={currentTrip.driver.name}
-                  onChange={(e) => handleUpdateTripInfo('driver', { name: e.target.value })}
-                />
-              </div>
-              <div className="info-field">
-                <label>CPF do Motorista</label>
-                <input
-                  type="text"
-                  placeholder="000.000.000-00"
-                  value={currentTrip.driver.document}
-                  onChange={(e) => handleUpdateTripInfo('driver', { document: e.target.value })}
-                />
-              </div>
-              <div className="info-field">
-                <label>Placa do Veículo</label>
-                <input
-                  type="text"
-                  placeholder="ABC-1234"
-                  value={currentTrip.vehicle.plate}
-                  onChange={(e) => handleUpdateTripInfo('vehicle', { plate: e.target.value })}
-                />
-              </div>
+      {/* Header com informações da viagem */}
+      <div className="trip-info-header">
+        <div className="trip-info-section">
+          <h2>Informações da Viagem</h2>
+          <div className="trip-info-grid">
+            <div className="trip-field">
+              <label>Cliente</label>
+              <input
+                type="text"
+                placeholder="Buscar o cliente"
+                value={currentTrip.client}
+                onChange={(e) => handleUpdateTripInfo('client', e.target.value)}
+              />
+            </div>
+            <div className="trip-field">
+              <label>ID Externo</label>
+              <input
+                type="text"
+                placeholder="00000"
+                value={currentTrip.externalId}
+                onChange={(e) => handleUpdateTripInfo('externalId', e.target.value)}
+              />
+            </div>
+            <div className="trip-field">
+              <label>Motorista</label>
+              <input
+                type="text"
+                placeholder="Nome do motorista"
+                value={currentTrip.driver.name}
+                onChange={(e) => handleUpdateTripInfo('driver', { name: e.target.value })}
+              />
+            </div>
+            <div className="trip-field">
+              <label>CPF do Motorista</label>
+              <input
+                type="text"
+                placeholder="000.000.000-00"
+                value={currentTrip.driver.document}
+                onChange={(e) => handleUpdateTripInfo('driver', { document: e.target.value })}
+              />
+            </div>
+            <div className="trip-field">
+              <label>Placa do Veículo</label>
+              <input
+                type="text"
+                placeholder="ABC-1234"
+                value={currentTrip.vehicle.plate}
+                onChange={(e) => handleUpdateTripInfo('vehicle', { plate: e.target.value })}
+              />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Pontos da Viagem */}
-        <div className="form-section">
-          <h2>Pontos da Viagem</h2>
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="stops">
-              {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef}>
-                  {currentTrip.stops.map((stop, index) => (
-                    <Draggable key={index} draggableId={`stop-${index}`} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="stop-card"
-                        >
-                          <div className="stop-header">
-                            <h3>{stop.type === 'COLETA' ? 'Coleta' : 'Entrega'}</h3>
-                            <div className="stop-info">
-                              <p className="company-cnpj">CNPJ: {stop.cnpj}</p>
-                              <p className="note-count">Notas: {stop.notes.length}</p>
-                            </div>
-                            <div className="stop-actions">
-                              <button onClick={() => handleOpenNotesModal(index)}>
-                                Adicionar Nota
-                              </button>
-                              <button onClick={() => handleEditStop(index)}>Editar</button>
-                              <button onClick={() => handleRemoveStop(index)}>Remover</button>
-                            </div>
-                          </div>
-                          <div className="stop-content">
-                            <div className="stop-info">
-                              <input
-                                type="text"
-                                value={stop.companyName}
-                                onChange={(e) => {
-                                  const updatedStops = [...currentTrip.stops]
-                                  updatedStops[index] = {
-                                    ...stop,
-                                    companyName: e.target.value
-                                  }
-                                  setCurrentTrip(prev => ({
-                                    ...prev,
-                                    stops: updatedStops
-                                  }))
-                                }}
-                                className="company-name-input"
-                              />
-                              <p className="address">
-                                {stop.address.logradouro}, {stop.address.numero}
-                              </p>
-                              <p className="address">
-                                {stop.address.bairro}, {stop.address.municipio} - {stop.address.uf}
-                              </p>
-                            </div>
-                            <div className="stop-notes">
-                              <p>Notas Fiscais:</p>
-                              <ul>
-                                {stop.notes.map(note => (
-                                  <li key={note.id}>NF {note.numeroNF}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
+      {/* Container para o conteúdo abaixo do header */}
+      <div className="trip-content">
+        {/* Seção de notas (Esquerda) */}
+        <div className="notes-section">
+          <div className="notes-header">
+            <h2>Notas Fiscais Disponíveis</h2>
+            <span className="count-badge">{processedData.length} notas</span>
+          </div>
+          <div className="xml-list">
+            {processedData.map(note => {
+              const isInUse = currentTrip.stops.some(stop => 
+                stop.notes.some(n => n.id === note.id)
+              )
+              
+              return (
+                <div key={note.id} className={`xml-item ${isInUse ? 'note-in-use' : ''}`}>
+                  <div className="xml-item-header">
+                    <span className="nf-number">NF {note.numeroNF}</span>
+                    <input
+                      type="checkbox"
+                      checked={selectedNotes.has(note.id)}
+                      onChange={(e) => handleNoteSelection(note.id, e.target.checked)}
+                      disabled={isInUse}
+                    />
+                  </div>
+                  <div className="xml-item-details">
+                    <div className="nf-party">
+                      <span className="party-label">Remetente:</span>
+                      <span className="party-name">{note.remetente.nome}</span>
+                      <span className="party-location">
+                        {note.remetente.endereco.municipio} - {note.remetente.endereco.uf}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Seção de pontos de parada (Direita) */}
+        <div className="form-section-container">
+          <div className="form-section">
+            <h2>Pontos da Viagem</h2>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="stops">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    {currentTrip.stops.map((stop, index) => (
+                      <Draggable key={index} draggableId={`stop-${index}`} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="stop-card"
+                          >
+                            <div className="stop-header">
+                              <h3>{stop.type === 'COLETA' ? 'Coleta' : 'Entrega'}</h3>
+                              <div className="stop-info">
+                                <p className="company-cnpj">CNPJ: {stop.cnpj}</p>
+                                <p className="note-count">Notas: {stop.notes.length}</p>
+                              </div>
+                              <div className="stop-actions">
+                                <button onClick={() => handleOpenNotesModal(index)}>
+                                  Adicionar Nota
+                                </button>
+                                <button onClick={() => handleEditStop(index)}>Editar</button>
+                                <button onClick={() => handleRemoveStop(index)}>Remover</button>
+                              </div>
+                            </div>
+                            <div className="stop-content">
+                              <div className="stop-info">
+                                <input
+                                  type="text"
+                                  value={stop.companyName}
+                                  onChange={(e) => {
+                                    const updatedStops = [...currentTrip.stops]
+                                    updatedStops[index] = {
+                                      ...stop,
+                                      companyName: e.target.value
+                                    }
+                                    setCurrentTrip(prev => ({
+                                      ...prev,
+                                      stops: updatedStops
+                                    }))
+                                  }}
+                                  className="company-name-input"
+                                />
+                                <p className="address">
+                                  {stop.address.logradouro}, {stop.address.numero}
+                                </p>
+                                <p className="address">
+                                  {stop.address.bairro}, {stop.address.municipio} - {stop.address.uf}
+                                </p>
+                              </div>
+                              <div className="stop-notes">
+                                <p>Notas Fiscais:</p>
+                                <ul>
+                                  {stop.notes.map(note => (
+                                    <li key={note.id}>NF {note.numeroNF}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
         </div>
       </div>
     </div>
