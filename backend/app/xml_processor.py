@@ -301,7 +301,8 @@ async def process_xml_files(files: List[UploadFile]) -> Dict[str, Any]:
                         continue
                     
                     data = processor.extract_data()
-                    print(f"Dados extraídos: {data}")  # Debug
+                    # Adiciona um ID único para cada nota fiscal
+                    data["id"] = f"nf_{data['numeroNF']}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
                     results["processed_data"].append(data)
                     
                 except ValueError as e:
@@ -314,92 +315,8 @@ async def process_xml_files(files: List[UploadFile]) -> Dict[str, Any]:
             finally:
                 await file.seek(0)
 
-        print(f"Resultados finais: {results}")  # Debug
         return results
 
     except Exception as e:
-        print(f"Erro geral no processamento: {str(e)}")  # Debug
-        raise ValueError(f"Erro no processamento dos arquivos: {str(e)}")
-
-def create_trip_structure(processed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Cria a estrutura da viagem a partir dos dados processados"""
-    try:
-        print(f"Iniciando criação da estrutura da viagem com dados: {processed_data}")  # Debug
-        
-        if not isinstance(processed_data, list):
-            raise ValueError("Dados processados devem ser uma lista")
-            
-        # Agrupa notas por município para criar pontos de parada
-        stops = {}
-        
-        for nf in processed_data:
-            if not isinstance(nf, dict):
-                print(f"NF inválida: {nf}")  # Debug
-                continue
-                
-            try:
-                # Coleta
-                remetente = nf.get('remetente', {})
-                endereco_rem = remetente.get('endereco', {})
-                municipio_rem = endereco_rem.get('municipio', '')
-                uf_rem = endereco_rem.get('uf', '')
-                
-                if municipio_rem and uf_rem:
-                    coleta_key = f"{municipio_rem}-{uf_rem}"
-                    if coleta_key not in stops:
-                        stops[coleta_key] = {
-                            "tipo": "COLETA",
-                            "endereco": endereco_rem,
-                            "notas": []
-                        }
-                    stops[coleta_key]["notas"].append({
-                        "numeroNF": nf.get("numeroNF", ""),
-                        "volume": nf.get("transporte", {}).get("volume", 1),
-                        "pesoBruto": nf.get("transporte", {}).get("pesoBruto", 0.0)
-                    })
-                
-                # Entrega
-                destinatario = nf.get('destinatario', {})
-                endereco_dest = destinatario.get('endereco', {})
-                municipio_dest = endereco_dest.get('municipio', '')
-                uf_dest = endereco_dest.get('uf', '')
-                
-                if municipio_dest and uf_dest:
-                    entrega_key = f"{municipio_dest}-{uf_dest}"
-                    if entrega_key not in stops:
-                        stops[entrega_key] = {
-                            "tipo": "ENTREGA",
-                            "endereco": endereco_dest,
-                            "notas": []
-                        }
-                    stops[entrega_key]["notas"].append({
-                        "numeroNF": nf.get("numeroNF", ""),
-                        "volume": nf.get("transporte", {}).get("volume", 1),
-                        "pesoBruto": nf.get("transporte", {}).get("pesoBruto", 0.0)
-                    })
-                    
-            except Exception as e:
-                print(f"Erro ao processar NF: {str(e)}")  # Debug
-                continue
-
-        result = {
-            "id": datetime.now().strftime("%Y%m%d%H%M%S"),
-            "status": "PENDENTE",
-            "dataCriacao": datetime.now().isoformat(),
-            "veiculo": {
-                "tipo": "TRUCK",
-                "placa": ""
-            },
-            "motorista": {
-                "nome": "",
-                "documento": ""
-            },
-            "paradas": list(stops.values())
-        }
-        
-        print(f"Estrutura da viagem criada: {result}")  # Debug
-        return result
-        
-    except Exception as e:
-        print(f"Erro ao criar estrutura da viagem: {str(e)}")  # Debug
-        raise ValueError(f"Erro ao criar estrutura da viagem: {str(e)}") 
+        print(f"Erro geral no processamento: {str(e)}")
+        raise ValueError(f"Erro no processamento dos arquivos: {str(e)}") 

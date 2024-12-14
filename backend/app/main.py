@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import xml_processor
 from pydantic import BaseModel
 import os
+from datetime import datetime
+from .models import Trip
 
 app = FastAPI()
 
@@ -25,13 +27,9 @@ async def upload_files(files: List[UploadFile] = File(...)):
         # Verifica se há dados processados
         if not result.get("processed_data"):
             raise ValueError("Nenhum dado foi processado dos arquivos")
-
-        # Cria a estrutura da viagem mas não envia para API externa
-        trip_data = xml_processor.create_trip_structure(result["processed_data"])
         
         return {
             "processed_data": result["processed_data"],
-            "trip_structure": trip_data,
             "validation_errors": result.get("validation_errors", {})
         }
         
@@ -43,4 +41,14 @@ async def upload_files(files: List[UploadFile] = File(...)):
 @app.get("/")
 async def root():
     return {"message": "API XML Processor está funcionando!"} 
+
+@app.post("/trips")
+async def create_trip(trip: Trip):
+    try:
+        # Aqui você pode adicionar lógica para salvar no banco de dados
+        # Por enquanto, vamos apenas retornar a viagem com um ID
+        trip.id = f"trip_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        return trip
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
