@@ -215,11 +215,68 @@ body {
 
 .stop-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 15px;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid #eee;
+}
+
+.stop-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 14px;
+}
+
+.stop-type {
+  font-weight: 600;
+  color: #0066cc;
+  min-width: 60px;
+}
+
+.stop-company {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-cnpj {
+  color: #666;
+}
+
+.stop-address {
+  color: #444;
+}
+
+/* Estilos para a seção de notas */
+.stop-notes {
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.stop-notes-title {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.notes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+}
+
+.note-item {
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  font-size: 13px;
+  color: #0066cc;
 }
 
 .stop-actions {
@@ -310,4 +367,127 @@ body {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Estilos do Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-content h2 {
+  color: #333;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.modal-notes-list {
+  overflow-y: auto;
+  max-height: 300px;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.modal-note-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-note-item:last-child {
+  border-bottom: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 15px;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-actions button:first-child {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.modal-actions button:last-child {
+  background: #0066cc;
+  color: white;
+}
+
+.modal-actions button:hover {
+  opacity: 0.9;
+}
+
+/* Estilos para o formulário de edição */
+.edit-stop-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  overflow-y: auto;
+  max-height: 400px;
+  padding: 10px;
+}
+
+.edit-stop-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.edit-stop-form .form-field:first-child {
+  grid-column: span 2;
+}
+
+.edit-stop-form label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.edit-stop-form input,
+.edit-stop-form select {
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+.edit-stop-form input:focus,
+.edit-stop-form select:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
 }

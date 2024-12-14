@@ -1,6 +1,177 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+
+// Adicione o componente do modal
+function NotesModal({ isOpen, onClose, availableNotes, onConfirm }) {
+  const [selectedNotes, setSelectedNotes] = useState(new Set())
+
+  const handleNoteSelection = (noteId) => {
+    const newSelected = new Set(selectedNotes)
+    if (newSelected.has(noteId)) {
+      newSelected.delete(noteId)
+    } else {
+      newSelected.add(noteId)
+    }
+    setSelectedNotes(newSelected)
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Adicionar Notas</h2>
+        <div className="modal-notes-list">
+          {availableNotes.map(note => (
+            <div key={note.id} className="modal-note-item">
+              <input
+                type="checkbox"
+                checked={selectedNotes.has(note.id)}
+                onChange={() => handleNoteSelection(note.id)}
+              />
+              <span>NF {note.numeroNF}</span>
+            </div>
+          ))}
+        </div>
+        <div className="modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button 
+            onClick={() => {
+              onConfirm(Array.from(selectedNotes))
+              setSelectedNotes(new Set())
+            }}
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Adicione o componente do modal de edição
+function EditStopModal({ isOpen, onClose, stop, onConfirm }) {
+  // Inicializa o estado apenas quando o modal é aberto e tem um stop válido
+  const [editedStop, setEditedStop] = useState(null)
+
+  // Atualiza o editedStop quando o stop muda
+  useEffect(() => {
+    if (stop) {
+      setEditedStop(stop)
+    }
+  }, [stop])
+
+  const handleChange = (field, value) => {
+    if (!editedStop) return
+
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.')
+      setEditedStop(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }))
+    } else {
+      setEditedStop(prev => ({
+        ...prev,
+        [field]: value
+      }))
+    }
+  }
+
+  if (!isOpen || !editedStop) return null
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Editar Ponto de Parada</h2>
+        <div className="edit-stop-form">
+          <div className="form-field">
+            <label>Tipo</label>
+            <select 
+              value={editedStop.type}
+              onChange={(e) => handleChange('type', e.target.value)}
+            >
+              <option value="COLETA">Coleta</option>
+              <option value="ENTREGA">Entrega</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Nome da Empresa</label>
+            <input
+              type="text"
+              value={editedStop.companyName}
+              onChange={(e) => handleChange('companyName', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>CNPJ</label>
+            <input
+              type="text"
+              value={editedStop.cnpj}
+              onChange={(e) => handleChange('cnpj', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>Logradouro</label>
+            <input
+              type="text"
+              value={editedStop.address.logradouro}
+              onChange={(e) => handleChange('address.logradouro', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>Número</label>
+            <input
+              type="text"
+              value={editedStop.address.numero}
+              onChange={(e) => handleChange('address.numero', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>Bairro</label>
+            <input
+              type="text"
+              value={editedStop.address.bairro}
+              onChange={(e) => handleChange('address.bairro', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>Município</label>
+            <input
+              type="text"
+              value={editedStop.address.municipio}
+              onChange={(e) => handleChange('address.municipio', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>UF</label>
+            <input
+              type="text"
+              value={editedStop.address.uf}
+              onChange={(e) => handleChange('address.uf', e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <label>CEP</label>
+            <input
+              type="text"
+              value={editedStop.address.cep}
+              onChange={(e) => handleChange('address.cep', e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button onClick={() => onConfirm(editedStop)}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function TripManager({ processedData }) {
   const [trips, setTrips] = useState([])
@@ -38,6 +209,8 @@ function TripManager({ processedData }) {
   const [showNotesModal, setShowNotesModal] = useState(false)
   const [selectedStopIndex, setSelectedStopIndex] = useState(null)
   const [availableNotes, setAvailableNotes] = useState([])
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingStop, setEditingStop] = useState(null)
 
   const handleCreateTrip = () => {
     const newTrip = {
@@ -225,10 +398,29 @@ function TripManager({ processedData }) {
     setSelectedNotes(newSelected)
   }
 
-  const handleEditStop = (stopIndex) => {
-    const stop = currentTrip.stops[stopIndex]
-    // Aqui você pode implementar a lógica de edição
-    // Por exemplo, abrir um modal com os campos editáveis
+  const handleEditStop = (index) => {
+    // Cria uma cópia profunda do stop para edição
+    const stopToEdit = JSON.parse(JSON.stringify(currentTrip.stops[index]))
+    setEditingStop(stopToEdit)
+    setSelectedStopIndex(index)
+    setShowEditModal(true)
+  }
+
+  const handleConfirmEdit = (editedStop) => {
+    setCurrentTrip(prev => {
+      const updatedStops = [...prev.stops]
+      updatedStops[selectedStopIndex] = {
+        ...editedStop,
+        notes: prev.stops[selectedStopIndex].notes // Mantém as notas originais
+      }
+      return {
+        ...prev,
+        stops: updatedStops
+      }
+    })
+    setShowEditModal(false)
+    setSelectedStopIndex(null)
+    setEditingStop(null)
   }
 
   const handleAddManualStop = () => {
@@ -433,10 +625,17 @@ function TripManager({ processedData }) {
                             className="stop-card"
                           >
                             <div className="stop-header">
-                              <h3>{stop.type === 'COLETA' ? 'Coleta' : 'Entrega'}</h3>
+                              <span className="stop-type">
+                                {stop.type === 'COLETA' ? 'Coleta' : 'Entrega'}
+                              </span>
                               <div className="stop-info">
-                                <p className="company-cnpj">CNPJ: {stop.cnpj}</p>
-                                <p className="note-count">Notas: {stop.notes.length}</p>
+                                <div className="stop-company">
+                                  <span className="company-cnpj">CNPJ: {stop.cnpj}</span>
+                                  <span className="company-name">{stop.companyName}</span>
+                                </div>
+                                <span className="stop-address">
+                                  {stop.address.logradouro}, {stop.address.numero} - {stop.address.bairro}, {stop.address.municipio} - {stop.address.uf}
+                                </span>
                               </div>
                               <div className="stop-actions">
                                 <button onClick={() => handleOpenNotesModal(index)}>
@@ -446,39 +645,16 @@ function TripManager({ processedData }) {
                                 <button onClick={() => handleRemoveStop(index)}>Remover</button>
                               </div>
                             </div>
-                            <div className="stop-content">
-                              <div className="stop-info">
-                                <input
-                                  type="text"
-                                  value={stop.companyName}
-                                  onChange={(e) => {
-                                    const updatedStops = [...currentTrip.stops]
-                                    updatedStops[index] = {
-                                      ...stop,
-                                      companyName: e.target.value
-                                    }
-                                    setCurrentTrip(prev => ({
-                                      ...prev,
-                                      stops: updatedStops
-                                    }))
-                                  }}
-                                  className="company-name-input"
-                                />
-                                <p className="address">
-                                  {stop.address.logradouro}, {stop.address.numero}
-                                </p>
-                                <p className="address">
-                                  {stop.address.bairro}, {stop.address.municipio} - {stop.address.uf}
-                                </p>
-                              </div>
-                              <div className="stop-notes">
-                                <p>Notas Fiscais:</p>
-                                <ul>
-                                  {stop.notes.map(note => (
-                                    <li key={note.id}>NF {note.numeroNF}</li>
-                                  ))}
-                                </ul>
-                              </div>
+                            
+                            <div className="stop-notes">
+                              <div className="stop-notes-title">Notas Fiscais:</div>
+                              <ul className="notes-list">
+                                {stop.notes.map(note => (
+                                  <li key={note.id} className="note-item">
+                                    NF {note.numeroNF}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           </div>
                         )}
@@ -492,6 +668,29 @@ function TripManager({ processedData }) {
           </div>
         </div>
       </div>
+
+      {/* Adicione o modal ao final do componente */}
+      <NotesModal
+        isOpen={showNotesModal}
+        onClose={() => {
+          setShowNotesModal(false)
+          setSelectedStopIndex(null)
+        }}
+        availableNotes={availableNotes}
+        onConfirm={handleAddNotesToStop}
+      />
+
+      {/* Adicione o modal de edição ao final do componente */}
+      <EditStopModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedStopIndex(null)
+          setEditingStop(null)
+        }}
+        stop={editingStop}
+        onConfirm={handleConfirmEdit}
+      />
     </div>
   )
 }
