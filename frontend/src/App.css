@@ -21,15 +21,92 @@ body {
 
 /* Seção de upload */
 .upload-section {
-  padding: 15px;
+  padding: 24px 32px;
   background: white;
   border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .upload-section h1 {
-  font-size: 1.4em;
-  color: #333;
-  margin-bottom: 12px;
+  font-size: 1.5em;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* Novo estilo para o container de upload */
+.upload-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+/* Estilização do wrapper do input de arquivo */
+.file-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-input-wrapper input[type="file"] {
+  display: none;
+}
+
+/* Botão personalizado para selecionar arquivo */
+.select-file-button {
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-file-button:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+/* Estilo para o texto de arquivos selecionados */
+.selected-files {
+  color: #495057;
+  font-size: 14px;
+}
+
+/* Estilização do botão de upload */
+.upload-button {
+  padding: 10px 24px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.upload-button:hover:not(:disabled) {
+  background: #0052a3;
+}
+
+.upload-button:disabled {
+  background: #a8c6e4;
+  cursor: not-allowed;
+}
+
+/* Estilo para mensagens de erro */
+.error {
+  color: #dc3545;
+  font-size: 14px;
+  margin-top: 8px;
 }
 
 /* Container do conteúdo principal */
@@ -324,13 +401,13 @@ body {
 
 .trip-info-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
 
 /* Cliente ocupa duas colunas */
 .trip-info-grid .trip-field:first-child {
-  grid-column: span 2;
+  grid-column: auto;
 }
 
 .trip-field {

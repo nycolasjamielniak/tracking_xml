@@ -39,7 +39,7 @@ function FileUpload({ onDataReceived }) {
 
       const data = await response.json()
       onDataReceived(data)
-      setFiles([]) // Limpa os arquivos após upload bem-sucedido
+      setFiles([])
     } catch (err) {
       setError(err.message)
       console.error('Erro:', err)
@@ -51,7 +51,11 @@ function FileUpload({ onDataReceived }) {
   return (
     <div className="upload-container">
       <div className="file-input-wrapper">
+        <label className="select-file-button" htmlFor="file-input">
+          Selecionar Arquivos
+        </label>
         <input
+          id="file-input"
           type="file"
           multiple
           accept=".xml"
@@ -59,7 +63,9 @@ function FileUpload({ onDataReceived }) {
           disabled={isLoading}
         />
         <span className="selected-files">
-          {files.length ? `${files.length} arquivo(s) selecionado(s)` : 'Nenhum arquivo selecionado'}
+          {files.length 
+            ? `${files.length} arquivo${files.length > 1 ? 's' : ''} XML selecionado${files.length > 1 ? 's' : ''}`
+            : 'Nenhum arquivo selecionado'}
         </span>
       </div>
       

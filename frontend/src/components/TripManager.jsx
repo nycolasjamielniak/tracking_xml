@@ -513,11 +513,6 @@ function TripManager({ processedData }) {
 
   // Add validation function
   const validateTripData = () => {
-    // Validate basic trip info
-    if (!currentTrip.client || !currentTrip.externalId) {
-      return false;
-    }
-
     // Validate driver info
     if (!currentTrip.driver.name || !currentTrip.driver.document) {
       return false;
@@ -577,24 +572,6 @@ function TripManager({ processedData }) {
         <div className="trip-info-section">
           <h2>Informações da Viagem</h2>
           <div className="trip-info-grid">
-            <div className="trip-field">
-              <label>Cliente</label>
-              <input
-                type="text"
-                placeholder="Buscar o cliente"
-                value={currentTrip.client}
-                onChange={(e) => handleUpdateTripInfo('client', e.target.value)}
-              />
-            </div>
-            <div className="trip-field">
-              <label>ID Externo</label>
-              <input
-                type="text"
-                placeholder="00000"
-                value={currentTrip.externalId}
-                onChange={(e) => handleUpdateTripInfo('externalId', e.target.value)}
-              />
-            </div>
             <div className="trip-field">
               <label>Motorista</label>
               <input

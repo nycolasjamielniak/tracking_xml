@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from .database import get_db, IntegratedTrip
 import json
+import random
 
 app = FastAPI()
 
@@ -67,21 +68,26 @@ async def create_trip(trip: Trip):
 @app.post("/trips/matrix-cargo")
 async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
     try:
-        # Check if trip already exists in our database
+        # Generate a unique externalId in the specific format
+        generated_external_id = f"{datetime.now().strftime('%H%M%S')}{random.randint(100,999)}"
+        
         existing_trip = db.query(IntegratedTrip).filter(
-            IntegratedTrip.external_id == trip.externalId
+            IntegratedTrip.external_id == generated_external_id
         ).first()
         
         if existing_trip:
             if existing_trip.status == 'success':
-                return existing_trip.matrix_cargo_response
+                return {
+                    "externalId": existing_trip.external_id,
+                    "matrix_cargo_response": existing_trip.matrix_cargo_response
+                }
             # If previous attempt failed, update the existing record
             db.delete(existing_trip)
             db.commit()
 
         # Transform trip data to Matrix Cargo format
         matrix_cargo_data = {
-            "externalId": trip.externalId,
+            "externalId": generated_external_id,
             "licensePlates": [trip.vehicle.plate],
             "estimatedStart": datetime.now(timezone.utc).isoformat(),
             "tripDetails": {},
@@ -121,7 +127,7 @@ async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
                     "requiresProofOfDelivery": stop.type == "ENTREGA",
                     "proofOfDeliveryDetails": [
                         {
-                            "type": "CTE",
+                            "type": "CANHOTO_NOTA_FISCAL",
                             "quantity": 1,
                             "identifier": note.chaveAcesso
                         } for note in stop.notes
@@ -167,9 +173,9 @@ async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
             # Send to Matrix Cargo API
             result = await matrix_cargo_client.create_trip(matrix_cargo_data)
             
-            # Store the integration result
+            # Store the integration result with the generated externalId
             integrated_trip = IntegratedTrip(
-                external_id=trip.externalId,
+                external_id=generated_external_id,
                 trip_data=json.loads(trip.json()),
                 matrix_cargo_response=result,
                 status='success'
@@ -177,21 +183,18 @@ async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
             db.add(integrated_trip)
             db.commit()
             
-            return result
+            return {
+                "externalId": generated_external_id,
+                "matrix_cargo_response": result
+            }
 
         except HTTPException as api_error:
-            # Check if the error is due to duplicate trip
-            error_msg = str(api_error.detail)
-            if "Unique constraint failed" in error_msg and existing_trip:
-                # If it's a duplicate and we have a successful previous integration
-                return existing_trip.matrix_cargo_response
-            
-            # For other API errors, store the failure and re-raise
+            # Store the failure with the generated externalId
             integrated_trip = IntegratedTrip(
-                external_id=trip.externalId,
+                external_id=generated_external_id,
                 trip_data=json.loads(trip.json()),
                 status='error',
-                error_message=error_msg
+                error_message=str(api_error.detail)
             )
             db.add(integrated_trip)
             db.commit()
@@ -199,11 +202,11 @@ async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
             raise
 
     except Exception as e:
-        # Store failed integration attempt if not already stored
+        # Store failed integration attempt with the generated externalId
         try:
             error_msg = str(e)
             integrated_trip = IntegratedTrip(
-                external_id=trip.externalId,
+                external_id=generated_external_id,
                 trip_data=json.loads(trip.json()),
                 status='error',
                 error_message=error_msg
@@ -211,7 +214,6 @@ async def create_matrix_cargo_trip(trip: Trip, db: Session = Depends(get_db)):
             db.add(integrated_trip)
             db.commit()
         except Exception as db_error:
-            # If we can't store the error, log it but raise the original error
             print(f"Failed to store error in database: {str(db_error)}")
         
         raise HTTPException(
