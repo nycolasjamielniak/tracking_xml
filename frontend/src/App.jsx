@@ -1,11 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import FileUpload from './components/FileUpload'
 import TripManager from './components/TripManager'
+import { Login } from './components/Login'
+import { authService } from './services/auth'
 import './App.css'
 
 function App() {
   const [xmlData, setXmlData] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
+  useEffect(() => {
+    // Verifica se já existe um token válido ao carregar a aplicação
+    setIsAuthenticated(authService.isAuthenticated())
+  }, [])
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true)
+  }
+
+  // Se não estiver autenticado, mostra a tela de login
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />
+  }
+
+  // Se estiver autenticado, mostra o conteúdo da aplicação
   return (
     <div className="container" style={{ width: '99%', margin: '0 auto', minHeight: '99vh' }}>
       <div className="upload-section">

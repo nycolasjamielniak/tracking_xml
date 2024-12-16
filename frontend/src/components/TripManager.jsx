@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import api from '../services/api';
 
 // Adicione o componente do modal
 function NotesModal({ isOpen, onClose, availableNotes, onConfirm }) {
@@ -295,28 +296,17 @@ function TripManager({ processedData }) {
 
   const handleSaveTrip = async () => {
     try {
-      const response = await fetch('http://localhost:8000/trips', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(currentTrip),
-      })
-
-      if (!response.ok) {
-        throw new Error('Erro ao salvar viagem')
-      }
-
-      const savedTrip = await response.json()
+      const response = await api.post('/trips', currentTrip);
+      
       setTrips(prev => prev.map(trip => 
-        trip.id === currentTrip.id ? savedTrip : trip
-      ))
-      setCurrentTrip(savedTrip)
-      alert('Viagem salva com sucesso!')
+        trip.id === currentTrip.id ? response.data : trip
+      ));
+      setCurrentTrip(response.data);
+      alert('Viagem salva com sucesso!');
     } catch (error) {
-      alert(`Erro ao salvar viagem: ${error.message}`)
+      alert(`Erro ao salvar viagem: ${error.message}`);
     }
-  }
+  };
 
   const handleNoteSelection = (noteId, isChecked) => {
     const newSelected = new Set(selectedNotes)
@@ -543,25 +533,17 @@ function TripManager({ processedData }) {
   };
 
   const handleGenerateMatrixCargoTrip = async () => {
+    if (!validateTripData()) {
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:8000/trips/matrix-cargo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(currentTrip),
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao gerar viagem Matrix Cargo');
-      }
-
-      const result = await response.json();
-      alert('Viagem Matrix Cargo gerada com sucesso!');
-      console.log('Matrix Cargo response:', result);
+      const response = await api.post('/trips/matrix-cargo', currentTrip);
+      
+      alert(`Viagem gerada com sucesso! ID Externo: ${response.data.externalId}`);
     } catch (error) {
-      alert(`Erro ao gerar viagem Matrix Cargo: ${error.message}`);
-      console.error('Error:', error);
+      console.error('Erro ao gerar viagem:', error);
+      alert(`Erro ao gerar viagem: ${error.response?.data?.detail || error.message}`);
     }
   };
 

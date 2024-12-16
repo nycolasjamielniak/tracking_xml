@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PropTypes from 'prop-types'
+import api from '../services/api'
 
 function FileUpload({ onDataReceived }) {
   const [isLoading, setIsLoading] = useState(false)
@@ -28,17 +29,8 @@ function FileUpload({ onDataReceived }) {
     })
 
     try {
-      const response = await fetch('http://localhost:8000/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro no upload: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      onDataReceived(data)
+      const response = await api.post('/upload', formData)
+      onDataReceived(response.data)
       setFiles([])
     } catch (err) {
       setError(err.message)
