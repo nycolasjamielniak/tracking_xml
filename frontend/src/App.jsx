@@ -27,7 +27,7 @@ function App() {
   return (
     <div className="container" style={{ width: '99%', margin: '0 auto', minHeight: '99vh' }}>
       <div className="upload-section">
-        <h1>Processador de XML</h1>
+        <h1>Criação de viagem a partir de XML</h1>
         <FileUpload onDataReceived={setXmlData} />
       </div>
       

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const KEYCLOAK_URL = 'https://auth-homol.matrixcargo.com.br/realms/painel/protocol/openid-connect/token';
-const CLIENT_ID = 'painel-api';
+const KEYCLOAK_URL = 'https://auth.matrixcargo.com.br/realms/painel/protocol/openid-connect/token';
+const CLIENT_ID = 'painel-v2';
 
 interface AuthResponse {
   access_token: string;
@@ -25,7 +25,7 @@ export const authService = {
         },
       });
       
-      // Store tokens in localStorage
+      // Store tokens in localStorage 
       localStorage.setItem('access_token', response.data.access_token);
       localStorage.setItem('refresh_token', response.data.refresh_token);
       

@@ -25,7 +25,7 @@ app.add_middleware(
 )
 
 # Add environment variables for Matrix Cargo API
-MATRIX_CARGO_API_URL = os.getenv('MATRIX_CARGO_API_URL', 'https://tracking-api-homol.matrixcargo.com.br/api/v1/external/trip')
+MATRIX_CARGO_API_URL = os.getenv('MATRIX_CARGO_API_URL', 'https://tracking-api.matrixcargo.com.br/api/v1/external/trip')
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):

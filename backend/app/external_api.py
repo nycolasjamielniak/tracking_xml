@@ -8,8 +8,8 @@ class ExternalAPIClient:
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "x-organization": "84f431e7-996a-4206-9876-26613d7bc9b3",
-            "x-organization-key": "84f431e7-996a-4206-9876-26613d7bc9b3"
+            "x-organization": "18256896-08b6-4ab4-8665-f861f8c70a87",
+            "x-organization-key": "18256896-08b6-4ab4-8665-f861f8c70a87"
         }
 
     async def create_trip(self, trip_data: Dict[str, Any]) -> Dict[str, Any]:
