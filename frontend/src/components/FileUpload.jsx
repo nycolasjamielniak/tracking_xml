@@ -30,7 +30,14 @@ function FileUpload({ onDataReceived }) {
 
     try {
       const response = await api.post('/upload', formData)
-      onDataReceived(response.data)
+      const processedDataWithUsageStatus = {
+        ...response.data,
+        processed_data: response.data.processed_data.map(note => ({
+          ...note,
+          isUsed: false
+        }))
+      };
+      onDataReceived(processedDataWithUsageStatus)
       setFiles([])
     } catch (err) {
       setError(err.message)

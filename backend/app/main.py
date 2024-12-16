@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from . import xml_processor
@@ -12,6 +12,8 @@ from fastapi import Depends
 from .database import get_db, IntegratedTrip
 import json
 import random
+from sqlalchemy.orm.decl_api import DeclarativeMeta
+from typing import Any
 
 app = FastAPI()
 
@@ -26,6 +28,14 @@ app.add_middleware(
 
 # Add environment variables for Matrix Cargo API
 MATRIX_CARGO_API_URL = os.getenv('MATRIX_CARGO_API_URL', 'https://tracking-api.matrixcargo.com.br/api/v1/external/trip')
+
+# Adicione este modelo para a resposta paginada
+class PaginatedTrips(BaseModel):
+    items: List[dict]
+    total: int
+    page: int
+    size: int
+    pages: int
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
@@ -227,9 +237,52 @@ async def create_matrix_cargo_trip(
             detail=f"Erro ao criar viagem no Matrix Cargo: {error_msg}"
         )
 
-# Add new endpoint to get integration history
-@app.get("/trips/integration-history")
-async def get_integration_history(db: Session = Depends(get_db)):
-    trips = db.query(IntegratedTrip).order_by(IntegratedTrip.created_at.desc()).all()
-    return trips
+def serialize_sqlalchemy(obj: Any) -> Any:
+    """Serializa objetos SQLAlchemy e tipos Python complexos para JSON."""
+    if hasattr(obj, '__dict__'):
+        obj_dict = obj.__dict__.copy()
+        # Remove o atributo interno do SQLAlchemy
+        obj_dict.pop('_sa_instance_state', None)
+        
+        # Serializa cada valor do dicionário
+        for key, value in obj_dict.items():
+            if isinstance(value, datetime):
+                obj_dict[key] = value.isoformat()
+            elif hasattr(value, '__dict__'):
+                obj_dict[key] = serialize_sqlalchemy(value)
+        return obj_dict
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, list):
+        return [serialize_sqlalchemy(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: serialize_sqlalchemy(value) for key, value in obj.items()}
+    return obj
+
+@app.get("/trips/integration-history", response_model=PaginatedTrips)
+async def get_integration_history(
+    db: Session = Depends(get_db),
+    page: int = 1,
+    size: int = 10
+):
+    offset = (page - 1) * size
+    total = db.query(IntegratedTrip).count()
+    total_pages = (total + size - 1) // size
+    
+    trips = db.query(IntegratedTrip)\
+        .order_by(IntegratedTrip.created_at.desc())\
+        .offset(offset)\
+        .limit(size)\
+        .all()
+    
+    # Serializa os objetos SQLAlchemy
+    trips_dict = [serialize_sqlalchemy(trip) for trip in trips]
+    
+    return {
+        "items": trips_dict,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": total_pages
+    }
 

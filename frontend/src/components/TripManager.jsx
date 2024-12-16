@@ -174,7 +174,7 @@ function EditStopModal({ isOpen, onClose, stop, onConfirm }) {
   )
 }
 
-function TripManager({ processedData }) {
+function TripManager({ processedData, onTripGenerated }) {
   const [trips, setTrips] = useState([])
   const [currentTrip, setCurrentTrip] = useState({
     id: '',
@@ -309,6 +309,16 @@ function TripManager({ processedData }) {
   };
 
   const handleNoteSelection = (noteId, isChecked) => {
+    // Verifica se a nota já foi usada em uma viagem anterior
+    const isNoteUsedInPreviousTrip = processedData.find(note => 
+      note.id === noteId && note.isUsed
+    );
+
+    if (isNoteUsedInPreviousTrip) {
+      alert('Esta nota já foi utilizada em uma viagem anterior.');
+      return;
+    }
+
     const newSelected = new Set(selectedNotes)
     if (isChecked) {
       newSelected.add(noteId)
@@ -467,9 +477,9 @@ function TripManager({ processedData }) {
       currentTrip.stops.flatMap(stop => stop.notes.map(note => note.id))
     )
     
-    // Mostra apenas notas que não estão em nenhum ponto
+    // Mostra apenas notas que não estão em nenhum ponto e não foram utilizadas em outras viagens
     const availableNotesFiltered = processedData.filter(note => 
-      !notesInStops.has(note.id)
+      !notesInStops.has(note.id) && !note.isUsed
     )
     
     setAvailableNotes(availableNotesFiltered)
@@ -540,6 +550,34 @@ function TripManager({ processedData }) {
     try {
       const response = await api.post('/trips/matrix-cargo', currentTrip);
       
+      // Coleta os IDs das notas usadas nesta viagem
+      const usedNoteIds = currentTrip.stops.flatMap(stop => 
+        stop.notes.map(note => note.id)
+      );
+      
+      // Notifica o componente pai sobre as notas utilizadas
+      onTripGenerated(usedNoteIds);
+      
+      // Reset trip data after successful integration
+      setCurrentTrip({
+        id: Date.now().toString(),
+        externalId: '',
+        carrier: '',
+        client: '',
+        workspace: '',
+        driver: {
+          name: '',
+          document: ''
+        },
+        vehicle: {
+          plate: ''
+        },
+        stops: []
+      });
+
+      // Clear selected notes
+      setSelectedNotes(new Set());
+      
       alert(`Viagem gerada com sucesso! ID Externo: ${response.data.externalId}`);
     } catch (error) {
       console.error('Erro ao gerar viagem:', error);
@@ -605,20 +643,35 @@ function TripManager({ processedData }) {
             <span className="count-badge">{processedData.length} notas</span>
           </div>
           <div className="xml-list">
-            {processedData.map(note => {
+            {[...processedData].sort((a, b) => {
+              // Função para determinar a prioridade da nota
+              const getPriority = (note) => {
+                if (note.isUsed) return 3; // Notas já utilizadas (prioridade mais baixa)
+                if (currentTrip.stops.some(stop => 
+                  stop.notes.some(n => n.id === note.id)
+                )) return 2; // Notas selecionadas para a viagem atual
+                return 1; // Notas disponíveis (prioridade mais alta)
+              };
+              
+              return getPriority(a) - getPriority(b);
+            }).map(note => {
               const isInUse = currentTrip.stops.some(stop => 
                 stop.notes.some(n => n.id === note.id)
-              )
+              );
               
               return (
-                <div key={note.id} className={`xml-item ${isInUse ? 'note-in-use' : ''}`}>
+                <div 
+                  key={note.id} 
+                  className={`xml-item ${isInUse ? 'note-in-use' : ''} ${note.isUsed ? 'note-used' : ''}`}
+                  title={note.isUsed ? "Nota utilizada em viagem anterior" : ""}
+                >
                   <div className="xml-item-header">
                     <span className="nf-number">NF {note.numeroNF}</span>
                     <input
                       type="checkbox"
                       checked={selectedNotes.has(note.id)}
                       onChange={(e) => handleNoteSelection(note.id, e.target.checked)}
-                      disabled={isInUse}
+                      disabled={isInUse || note.isUsed}
                     />
                   </div>
                   <div className="xml-item-details">
@@ -629,9 +682,14 @@ function TripManager({ processedData }) {
                         {note.remetente.endereco.municipio} - {note.remetente.endereco.uf}
                       </span>
                     </div>
+                    {note.isUsed && (
+                      <div className="note-status">
+                        <span className="status-indicator">✓ Utilizada</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -725,7 +783,8 @@ function TripManager({ processedData }) {
 }
 
 TripManager.propTypes = {
-  processedData: PropTypes.array.isRequired
+  processedData: PropTypes.array.isRequired,
+  onTripGenerated: PropTypes.func.isRequired
 }
 
 export default TripManager 

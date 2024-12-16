@@ -204,6 +204,7 @@ body {
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .xml-item:hover {
@@ -651,4 +652,328 @@ body {
 .login-form button:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.integration-history {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin: 20px;
+}
+
+.integration-history h2 {
+  color: #333;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.history-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 15px;
+  background: #f8f9fa;
+}
+
+.history-item.success {
+  border-left: 4px solid #28a745;
+}
+
+.history-item.error {
+  border-left: 4px solid #dc3545;
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.external-id {
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.history-item-details {
+  font-size: 14px;
+  color: #666;
+}
+
+.created-at {
+  margin-bottom: 8px;
+}
+
+.error-details {
+  color: #dc3545;
+  margin: 8px 0;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.trip-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.trip-details h4 {
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Adicione estes estilos para a navegação */
+.main-nav {
+  background: white;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 15px;
+}
+
+.nav-button {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+  background: #f8f9fa;
+  border-color: #0066cc;
+  color: #0066cc;
+}
+
+.nav-button.active {
+  background: #0066cc;
+  border-color: #0066cc;
+  color: white;
+}
+
+/* Adicione estes estilos ao seu arquivo App.css */
+
+.notes-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.notes-section h5 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stop-notes {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.stop-type {
+  font-size: 13px;
+  color: #495057;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.notes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.note-badge {
+  background: white;
+  border: 1px solid #dee2e6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #0066cc;
+}
+
+/* Adicione estes estilos para a paginação */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 20px 0;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.page-button {
+  padding: 6px 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 4px;
+  color: #495057;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-button:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #dee2e6;
+  color: #0066cc;
+}
+
+.page-button.active {
+  background: #0066cc;
+  border-color: #0066cc;
+  color: white;
+}
+
+.page-button:disabled {
+  background: #f8f9fa;
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.page-button.nav-button {
+  padding: 6px 12px;
+}
+
+.ellipsis {
+  color: #6c757d;
+  padding: 0 4px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.total-items {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.xml-item.note-used {
+  opacity: 0.8;
+  background: #f8fff9;
+  border: 1px solid #c3e6cb;
+  pointer-events: auto;
+  cursor: help;
+}
+
+.xml-item.note-used input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.xml-item.note-used::after {
+  content: "Nota utilizada em viagem anterior";
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #d4edda;
+  color: #155724;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 1000;
+  border: 1px solid #c3e6cb;
+}
+
+.xml-item.note-used:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.xml-item.note-used .nf-number::before {
+  content: "✓";
+  color: #28a745;
+  margin-right: 6px;
+  font-weight: bold;
+}
+
+/* Adicione estes estilos para o indicador de status */
+.note-status {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e9ecef;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  color: #28a745;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-indicator::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #28a745;
+  border-radius: 50%;
+  margin-right: 6px;
 }
