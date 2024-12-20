@@ -164,7 +164,10 @@ function validateOrder(order: CSVOrder): string[] {
 function getOrdersStats(orders: CSVOrder[]) {
   const total = orders.length;
   const validOrders = orders.filter(order => validateOrder(order).length === 0).length;
-  return { total, validOrders };
+  const problemLines = orders
+    .map((order, index) => validateOrder(order).length > 0 ? index + 1 : null)
+    .filter((line): line is number => line !== null);
+  return { total, validOrders, problemLines };
 }
 
 export function OrdersImport() {
@@ -373,7 +376,8 @@ export function OrdersImport() {
                 </span>
                 {getOrdersStats(processedOrders).validOrders !== getOrdersStats(processedOrders).total && (
                   <span className="stats-warning">
-                    ({getOrdersStats(processedOrders).total - getOrdersStats(processedOrders).validOrders} com inconformidade)
+                    ({getOrdersStats(processedOrders).total - getOrdersStats(processedOrders).validOrders} com inconformidade - 
+                    Linhas: {getOrdersStats(processedOrders).problemLines.join(', ')})
                   </span>
                 )}
               </div>
@@ -391,6 +395,7 @@ export function OrdersImport() {
             <table className="orders-table">
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>ID</th>
                   <th>Cliente</th>
                   <th>Origem</th>
@@ -405,12 +410,13 @@ export function OrdersImport() {
                 </tr>
               </thead>
               <tbody>
-                {processedOrders.map((order) => {
+                {processedOrders.map((order, index) => {
                   const orderErrors = validateOrder(order);
                   const hasErrors = orderErrors.length > 0;
                   
                   return (
                     <tr key={order.id} className={hasErrors ? 'invalid-order' : ''}>
+                      <td className="row-number">{index + 1}</td>
                       <td>
                         {order.id}
                         {hasErrors && (
