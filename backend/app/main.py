@@ -14,6 +14,9 @@ import json
 import random
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from typing import Any
+import csv
+import io
+import pytz
 
 app = FastAPI()
 
@@ -27,7 +30,7 @@ app.add_middleware(
 )
 
 # Add environment variables for Matrix Cargo API
-MATRIX_CARGO_API_URL = os.getenv('MATRIX_CARGO_API_URL', 'https://tracking-api.matrixcargo.com.br/api/v1/external/trip')
+MATRIX_CARGO_API_URL = os.getenv('MATRIX_CARGO_API_URL', 'https://tracking-api.matrixcargo.com.br/api/v1/external')
 
 # Adicione este modelo para a resposta paginada
 class PaginatedTrips(BaseModel):
@@ -285,4 +288,126 @@ async def get_integration_history(
         "size": size,
         "pages": total_pages
     }
+
+@app.post("/orders/upload")
+async def upload_orders(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        decoded_file = contents.decode('utf-8-sig').splitlines()
+        reader = csv.DictReader(decoded_file)
+        
+        orders = []
+        validation_errors = {}
+        
+        for row in reader:
+            try:
+                def parse_date(date_str: str) -> str:
+                    try:
+                        # Converte data do formato brasileiro para ISO
+                        parsed_date = datetime.strptime(date_str, '%d/%m/%Y %H:%M')
+                        utc_date = pytz.UTC.localize(parsed_date)
+                        return utc_date.isoformat()
+                    except ValueError as e:
+                        raise ValueError(f"Formato de data inválido. Use o formato DD/MM/YYYY HH:MM")
+
+                order = {
+                    "id": row['id'],
+                    "customerCNPJ": row['customer_cnpj'],
+                    "customerName": row['customer_name'],
+                    "originCNPJ": row['origin_cnpj'],
+                    "originName": row['origin_name'],
+                    "pickupDate": parse_date(row['pickup_date']),
+                    "destinationCNPJ": row['destination_cnpj'],
+                    "destinationName": row['destination_name'],
+                    "deliveryDate": parse_date(row['delivery_date']),
+                    "itemCode": row['item_code'],
+                    "itemDescription": row['item_description'],
+                    "itemVolume": float(row['item_volume']),
+                    "itemWeight": float(row['item_weight']),
+                    "itemQuantity": int(row['item_quantity']),
+                    "itemUnit": row['item_unit'],
+                    "itemUnitPrice": float(row['item_unit_price']),
+                    "merchandiseType": row['merchandise_type'],
+                    "isDangerous": row['is_dangerous'].lower() == 'true',
+                    "needsEscort": row['needs_escort'].lower() == 'true'
+                }
+                orders.append(order)
+            except Exception as e:
+                validation_errors[row['id']] = [str(e)]
+        
+        if validation_errors:
+            return {
+                "orders": [],
+                "validation_errors": validation_errors
+            }
+            
+        return {"orders": orders}
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+def transform_order_to_matrix_cargo_format(order: dict) -> dict:
+    """Transforma o pedido para o formato esperado pela API do Matrix Cargo"""
+    return {
+        "externalId": order["id"],
+        "cliente": {
+            "cnpj": order["customerCNPJ"],
+            "nome": order["customerName"]
+        },
+        "pontoServicoOrigem": {
+            "cnpj": order["originCNPJ"],
+            "nome": order["originName"]
+        },
+        "dataColeta": order["pickupDate"],
+        "pontoServicoDestino": {
+            "cnpj": order["destinationCNPJ"],
+            "nome": order["destinationName"]
+        },
+        "dataEntrega": order["deliveryDate"],
+        "mercadoriaPerigosa": order["isDangerous"],
+        "precisaDeEscolta": order["needsEscort"],
+        "itens": [
+            {
+                "codigo": order["itemCode"],
+                "descricao": order["itemDescription"],
+                "m3": order["itemVolume"],
+                "peso": order["itemWeight"],
+                "quantidade": order["itemQuantity"],
+                "unidade": order["itemUnit"],
+                "valorUnitario": order["itemUnitPrice"]
+            }
+        ],
+        "tipoMercadoria": {
+            "ativo": True,
+            "descricao": order["merchandiseType"]
+        }
+    }
+
+@app.post("/orders/matrix-cargo")
+async def create_matrix_cargo_orders(
+    orders: List[dict],
+    authorization: str = Header(None)
+):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token não fornecido")
+
+    try:
+        matrix_cargo_client = ExternalAPIClient(
+            MATRIX_CARGO_API_URL, 
+            authorization.replace('Bearer ', '')
+        )
+        
+        results = []
+        for order in orders:
+            matrix_cargo_order = transform_order_to_matrix_cargo_format(order)
+            result = await matrix_cargo_client.create_order(matrix_cargo_order)
+            results.append(result)
+            
+        return {"results": results}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao criar pedidos no Matrix Cargo: {str(e)}"
+        )
 

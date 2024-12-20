@@ -5,11 +5,12 @@ import { Login } from './components/Login'
 import { IntegrationHistory } from './components/IntegrationHistory'
 import { authService } from './services/auth'
 import './App.css'
+import { OrdersImport } from './components/OrdersImport'
 
 function App() {
   const [xmlData, setXmlData] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentView, setCurrentView] = useState('upload') // 'upload' ou 'history'
+  const [currentView, setCurrentView] = useState('upload') // 'upload', 'history' ou 'orders'
 
   useEffect(() => {
     setIsAuthenticated(authService.isAuthenticated())
@@ -57,7 +58,13 @@ function App() {
           className={`nav-button ${currentView === 'upload' ? 'active' : ''}`}
           onClick={() => setCurrentView('upload')}
         >
-          Upload XML
+          Criar Viagem
+        </button>
+        <button 
+          className={`nav-button ${currentView === 'orders' ? 'active' : ''}`}
+          onClick={() => setCurrentView('orders')}
+        >
+          Criar Pedidos
         </button>
         <button 
           className={`nav-button ${currentView === 'history' ? 'active' : ''}`}
@@ -87,6 +94,8 @@ function App() {
             </div>
           )}
         </>
+      ) : currentView === 'orders' ? (
+        <OrdersImport />
       ) : (
         <IntegrationHistory />
       )}

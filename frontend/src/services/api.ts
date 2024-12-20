@@ -1,21 +1,20 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 import { authService } from './auth';
 
 const api = axios.create({
+  //baseURL: 'https://facilitador-api.matrixcargo.com.br',
   baseURL: 'http://localhost:8000',
 });
 
-// Add request interceptor to include auth token
-api.interceptors.request.use((config: AxiosRequestConfig) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = authService.getAccessToken();
   if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+    // Em Axios 1.x, headers é do tipo AxiosHeaders, podendo-se usar 'set'
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config;
 });
 
-// Add response interceptor to handle 401 errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -27,4 +26,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default api;

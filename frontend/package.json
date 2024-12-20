@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@types/axios": "^0.9.36",
+    "ag-grid-community": "^33.0.3",
+    "ag-grid-react": "^33.0.3",
     "axios": "^1.7.9",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",

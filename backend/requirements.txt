@@ -4,3 +4,4 @@ uvicorn==0.15.0
 pydantic==1.8.2
 httpx==0.24.0
 sqlalchemy==1.4.23
+pytz==2024.1

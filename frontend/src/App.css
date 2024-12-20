@@ -107,6 +107,11 @@ body {
   color: #dc3545;
   font-size: 14px;
   margin-top: 8px;
+  padding: 10px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  white-space: pre-line;
 }
 
 /* Container do conteúdo principal */
@@ -976,4 +981,425 @@ body {
   background: #28a745;
   border-radius: 50%;
   margin-right: 6px;
+}
+
+/* Estilos para importação de pedidos */
+.orders-import {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.orders-preview {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.orders-preview h2 {
+  margin-bottom: 20px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orders-list {
+  display: grid;
+  gap: 15px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.order-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 15px;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.order-id {
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.customer-name {
+  color: #495057;
+}
+
+.order-details {
+  font-size: 14px;
+  color: #666;
+}
+
+.order-items {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.order-items h4 {
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.order-items ul {
+  list-style: none;
+  padding: 0;
+}
+
+.order-items li {
+  padding: 4px 0;
+  color: #666;
+}
+
+.orders-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.create-orders-button {
+  padding: 10px 20px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.create-orders-button:hover:not(:disabled) {
+  background: #34495e;
+}
+
+.create-orders-button:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+/* Estilos para instruções do CSV */
+.csv-instructions {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.csv-instructions p {
+  margin-bottom: 15px;
+  color: #495057;
+}
+
+.csv-instructions ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.csv-instructions li {
+  font-size: 14px;
+  color: #666;
+  padding: 4px 0;
+}
+
+.csv-instructions strong {
+  color: #495057;
+}
+
+.download-example-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.download-example-button:hover {
+  background: #218838;
+}
+
+/* Estilos para instruções compactas */
+.csv-instructions-compact {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.instructions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.instructions-header p {
+  margin: 0;
+  color: #495057;
+  flex: 1;
+}
+
+.instructions-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.view-instructions-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.view-instructions-button:hover {
+  background: #5a6268;
+}
+
+/* Estilos para o modal de instruções */
+.instructions-modal {
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #212529;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #343a40;
+}
+
+.modal-body {
+  padding: 20px 0;
+  overflow-y: auto;
+  max-height: calc(90vh - 100px);
+}
+
+.instructions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.instruction-group {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.instruction-group h3 {
+  color: #343a40;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 8px;
+}
+
+.instruction-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.instruction-group li {
+  font-size: 14px;
+  color: #495057;
+  padding: 4px 0;
+}
+
+.instruction-group strong {
+  color: #212529;
+  display: inline-block;
+  min-width: 120px;
+}
+
+/* Overlay do modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para a tabela de pedidos */
+.orders-table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-top: 20px;
+  padding: 20px;
+}
+
+.orders-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.orders-table-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.integrate-button {
+  padding: 10px 20px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.integrate-button:hover:not(:disabled) {
+  background: #34495e;
+}
+
+.integrate-button:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.orders-table-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.orders-table th {
+  background: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  color: #495057;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.orders-table td {
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  color: #212529;
+}
+
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cell-content span {
+  color: #212529;
+}
+
+.cell-content small {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.status-flags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.status-flag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-flag.dangerous {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-flag.escort {
+  background: #cce5ff;
+  color: #004085;
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+  .orders-table-wrapper {
+    margin: 0 -20px;
+  }
+  
+  .orders-table {
+    min-width: 1000px;
+  }
 }
