@@ -161,6 +161,12 @@ function validateOrder(order: CSVOrder): string[] {
   return errors;
 }
 
+function getOrdersStats(orders: CSVOrder[]) {
+  const total = orders.length;
+  const validOrders = orders.filter(order => validateOrder(order).length === 0).length;
+  return { total, validOrders };
+}
+
 export function OrdersImport() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -359,7 +365,19 @@ export function OrdersImport() {
       {processedOrders.length > 0 && (
         <div className="orders-table-container">
           <div className="orders-table-header">
-            <h2>Pedidos Processados ({processedOrders.length})</h2>
+            <div className="header-content">
+              <h2>Pedidos Processados</h2>
+              <div className="orders-stats">
+                <span className="stats-count">
+                  {getOrdersStats(processedOrders).validOrders}/{getOrdersStats(processedOrders).total}
+                </span>
+                {getOrdersStats(processedOrders).validOrders !== getOrdersStats(processedOrders).total && (
+                  <span className="stats-warning">
+                    ({getOrdersStats(processedOrders).total - getOrdersStats(processedOrders).validOrders} com inconformidade)
+                  </span>
+                )}
+              </div>
+            </div>
             <button
               onClick={handleIntegrateOrders}
               disabled={isIntegrating}
