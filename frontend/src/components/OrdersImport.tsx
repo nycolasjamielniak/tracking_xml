@@ -23,6 +23,11 @@ interface CSVOrder {
   needsEscort: boolean;
 }
 
+interface OrderValidation {
+  id: string;
+  errors: string[];
+}
+
 function InstructionsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
@@ -97,6 +102,65 @@ function formatDateTime(dateString: string) {
   });
 }
 
+function validateCNPJ(cnpj: string): string {
+  // Converte para string caso seja número
+  const cnpjString = String(cnpj);
+  
+  // Remove todos os caracteres não numéricos e espaços
+  const cleanCNPJ = cnpjString.trim().replace(/[^\d]/g, '');
+  
+  // Log para debug
+  console.log({
+    original: cnpj,
+    originalType: typeof cnpj,
+    originalLength: cnpj.length,
+    cleaned: cleanCNPJ,
+    cleanedLength: cleanCNPJ.length
+  });
+  
+  if (cleanCNPJ.length !== 14) {
+    if (cleanCNPJ.length < 14) {
+      return `CNPJ incompleto (faltam ${14 - cleanCNPJ.length} dígitos)`;
+    } else {
+      return `CNPJ inválido (${cleanCNPJ.length - 14} dígitos excedentes)`;
+    }
+  }
+  return '';
+}
+
+function validateOrder(order: CSVOrder): string[] {
+  const errors: string[] = [];
+  
+  // Validação de CNPJ
+  const customerCNPJError = validateCNPJ(order.customerCNPJ);
+  if (customerCNPJError) {
+    errors.push(`CNPJ do cliente ${customerCNPJError}`);
+  }
+
+  const originCNPJError = validateCNPJ(order.originCNPJ);
+  if (originCNPJError) {
+    errors.push(`CNPJ de origem ${originCNPJError}`);
+  }
+
+  const destinationCNPJError = validateCNPJ(order.destinationCNPJ);
+  if (destinationCNPJError) {
+    errors.push(`CNPJ de destino ${destinationCNPJError}`);
+  }
+
+  // Validação de valores zerados
+  if (order.itemQuantity <= 0) {
+    errors.push('Quantidade inválida');
+  }
+  if (order.itemWeight <= 0) {
+    errors.push('Peso inválido');
+  }
+  if (order.itemVolume <= 0) {
+    errors.push('Volume inválido');
+  }
+
+  return errors;
+}
+
 export function OrdersImport() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,7 +197,7 @@ export function OrdersImport() {
       
       if (response.data.validation_errors && Object.keys(response.data.validation_errors).length > 0) {
         const errorMessages = Object.entries(response.data.validation_errors)
-          .map(([id, errors]) => `Pedido ${id}: ${errors.join(', ')}`)
+          .map(([id, errors]) => `Pedido ${id}: ${(errors as string[]).join(', ')}`)
           .join('\n');
         setError(`Erros de validação:\n${errorMessages}`);
         return;
@@ -151,13 +215,23 @@ export function OrdersImport() {
   const handleIntegrateOrders = async () => {
     if (!processedOrders.length) return;
 
+    // Verifica erros em todas as ordens
+    const ordersWithErrors = processedOrders.filter(order => validateOrder(order).length > 0);
+    
+    if (ordersWithErrors.length > 0) {
+      const confirm = window.confirm(
+        `Existem ${ordersWithErrors.length} pedido(s) com inconformidades. Deseja continuar mesmo assim?`
+      );
+      if (!confirm) return;
+    }
+
     setIsIntegrating(true);
     setError(null);
 
     try {
       const response = await api.post('/orders/matrix-cargo', processedOrders);
       alert('Pedidos integrados com sucesso!');
-      setProcessedOrders([]); // Limpa a lista após integração
+      setProcessedOrders([]);
       setFile(null);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Erro ao integrar pedidos');
@@ -313,50 +387,67 @@ export function OrdersImport() {
                 </tr>
               </thead>
               <tbody>
-                {processedOrders.map((order) => (
-                  <tr key={order.id}>
-                    <td>{order.id}</td>
-                    <td>
-                      <div className="cell-content">
-                        <span>{order.customerName}</span>
-                        <small>{order.customerCNPJ}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="cell-content">
-                        <span>{order.originName}</span>
-                        <small>{order.originCNPJ}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="cell-content">
-                        <span>{order.destinationName}</span>
-                        <small>{order.destinationCNPJ}</small>
-                      </div>
-                    </td>
-                    <td>{formatDateTime(order.pickupDate)}</td>
-                    <td>{formatDateTime(order.deliveryDate)}</td>
-                    <td>
-                      <div className="cell-content">
-                        <span>{order.itemDescription}</span>
-                        <small>Código: {order.itemCode}</small>
-                      </div>
-                    </td>
-                    <td>{`${order.itemQuantity} ${order.itemUnit}`}</td>
-                    <td>{`${order.itemWeight} kg`}</td>
-                    <td>{`${order.itemVolume} m³`}</td>
-                    <td>
-                      <div className="status-flags">
-                        {order.isDangerous && (
-                          <span className="status-flag dangerous">Perigoso</span>
+                {processedOrders.map((order) => {
+                  const orderErrors = validateOrder(order);
+                  const hasErrors = orderErrors.length > 0;
+                  
+                  return (
+                    <tr key={order.id} className={hasErrors ? 'invalid-order' : ''}>
+                      <td>
+                        {order.id}
+                        {hasErrors && (
+                          <div className="validation-errors">
+                            {orderErrors.map((error, index) => (
+                              <span key={index} className="validation-error-tag">{error}</span>
+                            ))}
+                          </div>
                         )}
-                        {order.needsEscort && (
-                          <span className="status-flag escort">Escolta</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>
+                        <div className={`cell-content ${validateCNPJ(order.customerCNPJ) ? 'invalid-field' : ''}`}>
+                          <span>{order.customerName}</span>
+                          <small>{order.customerCNPJ}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={`cell-content ${validateCNPJ(order.originCNPJ) ? 'invalid-field' : ''}`}>
+                          <span>{order.originName}</span>
+                          <small>{order.originCNPJ}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={`cell-content ${validateCNPJ(order.destinationCNPJ) ? 'invalid-field' : ''}`}>
+                          <span>{order.destinationName}</span>
+                          <small>{order.destinationCNPJ}</small>
+                        </div>
+                      </td>
+                      <td>{formatDateTime(order.pickupDate)}</td>
+                      <td>{formatDateTime(order.deliveryDate)}</td>
+                      <td>
+                        <div className="cell-content">
+                          <span>{order.itemDescription}</span>
+                          <small>Código: {order.itemCode}</small>
+                        </div>
+                      </td>
+                      <td>{`${order.itemQuantity} ${order.itemUnit}`}</td>
+                      <td className={order.itemWeight <= 0 ? 'invalid-field' : ''}>{`${order.itemWeight} kg`}</td>
+                      <td className={order.itemVolume <= 0 ? 'invalid-field' : ''}>{`${order.itemVolume} m³`}</td>
+                      <td>
+                        <div className="status-flags">
+                          {order.isDangerous && (
+                            <span className="status-flag dangerous">Perigoso</span>
+                          )}
+                          {order.needsEscort && (
+                            <span className="status-flag escort">Escolta</span>
+                          )}
+                          {hasErrors && (
+                            <span className="status-flag invalid">Inconformidade</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
