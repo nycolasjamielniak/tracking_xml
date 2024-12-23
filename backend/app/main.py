@@ -17,8 +17,13 @@ from typing import Any
 import csv
 import io
 import pytz
+import httpx
 
-app = FastAPI()
+app = FastAPI(
+    title="Matrix Cargo Integration API",
+    description="API para integração com Matrix Cargo",
+    version="1.0.0"
+)
 
 # Configuração do CORS
 app.add_middleware(
@@ -409,5 +414,100 @@ async def create_matrix_cargo_orders(
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao criar pedidos no Matrix Cargo: {str(e)}"
+        )
+
+# Atualize os modelos Pydantic para conter apenas os campos necessários
+class Workspace(BaseModel):
+    id: str
+    name: str
+
+class Organization(BaseModel):
+    id: str
+    name: str
+    workspaces: List[Workspace]
+
+class OrganizationResponse(BaseModel):
+    data: List[Organization]
+
+@app.get(
+    "/organizations",
+    response_model=OrganizationResponse,
+    tags=["Organizations"]
+)
+async def get_organizations(
+    authorization: str = Header(
+        None,
+        description="Token de autenticação no formato 'Bearer {token}'"
+    )
+):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token não fornecido")
+    
+    token = authorization.replace('Bearer ', '')
+    
+    try:
+        async with httpx.AsyncClient(
+            verify=True,
+            timeout=30.0
+        ) as client:
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive'
+            }
+            
+            url = "https://painel-logistico-api.matrixcargo.com.br/api/v1/organization"
+            
+            response = await client.get(
+                url,
+                headers=headers,
+                follow_redirects=True
+            )
+            
+            if response.status_code == 401:
+                raise HTTPException(status_code=401, detail="Token inválido ou expirado")
+            elif response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Erro na requisição: {response.text}"
+                )
+
+            # Filtrar apenas os campos necessários da resposta
+            raw_data = response.json()
+            filtered_data = {
+                "data": [
+                    {
+                        "id": org["id"],
+                        "name": org["name"],
+                        "workspaces": [
+                            {
+                                "id": ws["id"],
+                                "name": ws["name"]
+                            }
+                            for ws in org["workspaces"]
+                        ]
+                    }
+                    for org in raw_data["data"]
+                ]
+            }
+            
+            return filtered_data
+            
+    except httpx.HTTPError as e:
+        print(f"Erro HTTP: {str(e)}")
+        if hasattr(e, 'response'):
+            print(f"Status code: {e.response.status_code}")
+            print(f"Response body: {e.response.text}")
+        raise HTTPException(
+            status_code=getattr(e, 'response', httpx.Response(status_code=500)).status_code,
+            detail=f"Erro ao buscar organizações: {str(e)}"
+        )
+    except Exception as e:
+        print(f"Erro inesperado: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro interno do servidor: {str(e)}"
         )
 

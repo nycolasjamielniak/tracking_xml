@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
 interface CSVOrder {
@@ -26,6 +26,17 @@ interface CSVOrder {
 interface OrderValidation {
   id: string;
   errors: string[];
+}
+
+interface Workspace {
+  id: string;
+  name: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  workspaces: Workspace[];
 }
 
 function InstructionsModal({ isOpen, onClose }) {
@@ -177,6 +188,10 @@ export function OrdersImport() {
   const [processedOrders, setProcessedOrders] = useState<CSVOrder[]>([]);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isIntegrating, setIsIntegrating] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrganization, setSelectedOrganization] = useState<string>('');
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string>('');
+  const [isLoadingOrgs, setIsLoadingOrgs] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -221,8 +236,41 @@ export function OrdersImport() {
     }
   };
 
+  const fetchOrganizations = async () => {
+    setIsLoadingOrgs(true);
+    try {
+      const response = await api.get('/organizations');
+      setOrganizations(response.data.data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Erro ao buscar organizações');
+    } finally {
+      setIsLoadingOrgs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
+  useEffect(() => {
+    setSelectedWorkspace('');
+  }, [selectedOrganization]);
+
+  const getSelectedOrgWorkspaces = () => {
+    const org = organizations.find(org => org.id === selectedOrganization);
+    return org?.workspaces || [];
+  };
+
   const handleIntegrateOrders = async () => {
     if (!processedOrders.length) return;
+    if (!selectedOrganization) {
+      setError('Por favor, selecione uma organização');
+      return;
+    }
+    if (!selectedWorkspace) {
+      setError('Por favor, selecione um workspace');
+      return;
+    }
 
     // Verifica erros em todas as ordens
     const ordersWithErrors = processedOrders.filter(order => validateOrder(order).length > 0);
@@ -238,7 +286,11 @@ export function OrdersImport() {
     setError(null);
 
     try {
-      const response = await api.post('/orders/matrix-cargo', processedOrders);
+      const response = await api.post('/orders/matrix-cargo', {
+        orders: processedOrders,
+        organizationId: selectedOrganization,
+        workspaceId: selectedWorkspace
+      });
       alert('Pedidos integrados com sucesso!');
       setProcessedOrders([]);
       setFile(null);
@@ -363,6 +415,49 @@ export function OrdersImport() {
         </div>
         
         {error && <p className="error">{error}</p>}
+      </div>
+
+      <div className="organization-selection">
+        {organizations.length > 0 && (
+          <>
+            <div className="select-container">
+              <label htmlFor="organization-select">Organização </label>
+              <select
+                id="organization-select"
+                value={selectedOrganization}
+                onChange={(e) => setSelectedOrganization(e.target.value)}
+                className="organization-select2"
+                disabled={isLoadingOrgs}
+              >
+                <option value="">Selecione uma organização</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedOrganization && (
+              <div className="select-container">
+                <label htmlFor="workspace-select">Workspace </label>
+                <select
+                  id="workspace-select"
+                  value={selectedWorkspace}
+                  onChange={(e) => setSelectedWorkspace(e.target.value)}
+                  className="workspace-select"
+                >
+                  <option value="">Selecione um workspace</option>
+                  {getSelectedOrgWorkspaces().map((workspace) => (
+                    <option key={workspace.id} value={workspace.id}>
+                      {workspace.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {processedOrders.length > 0 && (

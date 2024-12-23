@@ -1,4 +1,4 @@
-/* Reset global */
+  /* Reset global */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -59,11 +59,12 @@ body {
 
 /* Botão personalizado para selecionar arquivo */
 .select-file-button {
-  padding: 10px 16px;
-  background: white;
+  padding: 4px 10px;
+  display: inline-flex;
+  background: #2FCB75;
   border: 1px solid #ced4da;
-  border-radius: 6px;
-  color: #495057;
+  border-radius: 8px;
+  color: #ffffff;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -992,7 +993,7 @@ body {
 
 .orders-preview {
   padding: 20px;
-  background: white;
+  background: rgb(98, 9, 9);
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -1402,4 +1403,120 @@ body {
   .orders-table {
     min-width: 1000px;
   }
+}
+
+.nav-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-bottom: 1px solid #e0e0e0;
+  height: 64px;
+}
+
+.nav-left {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-left a {
+  text-decoration: none;
+  color: #666;
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-left a:hover,
+.nav-left a.active {
+  color: #0066cc;
+  border-bottom-color: #0066cc;
+}
+
+/* Atualizar os estilos do seletor de organização */
+.organization-selection {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  min-width: 180px;
+
+}
+
+.organization-select2 {
+  padding: 0.25rem 2rem 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  color: #333;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-width: 180px;
+  height: 32px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  cursor: pointer;
+}
+
+.select-container:hover {
+  border-color: #bbb;
+}
+
+.select-container:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
+}
+
+.select-container:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  color: #999;
+}
+
+.organization-error {
+  color: #dc3545;
+  font-size: 0.75rem;
+  position: absolute;
+  bottom: -1.25rem;
+  right: 0;
+}
+
+/* Adicionar divisor entre os selects */
+.select-container {
+  position: right;
+}
+
+.select-container:first-child::after {
+  content: '';
+  position: absolute;
+  right: -0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 20px;
+  width: 1px;
+  background-color: #ddd;
+}
+
+.workspace-select {
+  padding: 0.25rem 2rem 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  color: #333;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-width: 180px;
+  height: 32px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  cursor: pointer;
 }
