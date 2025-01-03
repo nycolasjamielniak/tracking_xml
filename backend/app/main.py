@@ -409,6 +409,7 @@ class OrganizationResponse(BaseModel):
 # Add new models for order validation
 class OrderRequest(BaseModel):
     id: str
+    uniqueId: str
     customerCNPJ: str
     customerName: str
     originCNPJ: str
@@ -443,7 +444,6 @@ async def create_matrix_cargo_orders(
         raise HTTPException(status_code=400, detail="Workspace-Id header é obrigatório")
 
     try:
-        # Removendo o Bearer se existir, pois já adicionamos na classe
         token = authorization.replace('Bearer ', '')
         
         matrix_cargo_client = MatrixcargoPainelLogistico(
@@ -458,21 +458,44 @@ async def create_matrix_cargo_orders(
         
         for order in orders:
             try:
-                # Convertendo o modelo Pydantic para dict antes de transformar
-                order_dict = order.dict()
-                matrix_cargo_order = transform_order_to_matrix_cargo_format(order_dict)
+                matrix_cargo_order = transform_order_to_matrix_cargo_format(order.dict())
                 result = await matrix_cargo_client.create_order(matrix_cargo_order)
                 results.append({
                     "id": order.id,
+                    "uniqueId": order.uniqueId,
                     "status": "success",
                     "result": result
                 })
-            except Exception as e:
-                print(f"Erro ao processar pedido {order.id}: {str(e)}")
+            except HTTPException as e:
+                error_detail = e.detail
+                # Tenta extrair a mensagem de erro da Matrix Cargo
+                if isinstance(error_detail, str):
+                    try:
+                        error_json = json.loads(error_detail)
+                        if isinstance(error_json.get('message'), list):
+                            error_message = '; '.join(error_json['message'])
+                        else:
+                            error_message = str(error_json.get('message', error_detail))
+                    except:
+                        error_message = error_detail
+                else:
+                    error_message = str(error_detail)
+
+                print(f"Erro ao processar pedido {order.id} (uniqueId: {order.uniqueId}): {error_message}")
                 errors.append({
                     "id": order.id,
+                    "uniqueId": order.uniqueId,
                     "status": "error",
-                    "error": str(e)
+                    "error": error_message
+                })
+            except Exception as e:
+                error_message = str(e)
+                print(f"Erro ao processar pedido {order.id} (uniqueId: {order.uniqueId}): {error_message}")
+                errors.append({
+                    "id": order.id,
+                    "uniqueId": order.uniqueId,
+                    "status": "error",
+                    "error": error_message
                 })
         
         return {

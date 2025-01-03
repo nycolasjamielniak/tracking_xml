@@ -3,6 +3,7 @@ import api from '../services/api';
 
 interface CSVOrder {
   id: string;
+  uniqueId: string;
   customerCNPJ: string;
   customerName: string;
   originCNPJ: string;
@@ -21,6 +22,9 @@ interface CSVOrder {
   merchandiseType: string;
   isDangerous: boolean;
   needsEscort: boolean;
+  integrationStatus?: 'pending' | 'success' | 'error';
+  integrationCode?: string;
+  integrationError?: string;
 }
 
 interface OrderValidation {
@@ -204,6 +208,11 @@ export function OrdersImport() {
     }
   };
 
+  const generateUniqueId = (index: number, orderId: string): string => {
+    const timestamp = Date.now();
+    return `${index}-${orderId}-${timestamp}`;
+  };
+
   const handleUpload = async () => {
     if (!file) {
       setError('Por favor, selecione um arquivo CSV');
@@ -227,7 +236,12 @@ export function OrdersImport() {
         return;
       }
       
-      setProcessedOrders(response.data.orders);
+      const ordersWithUniqueIds = response.data.orders.map((order: CSVOrder, index: number) => ({
+        ...order,
+        uniqueId: generateUniqueId(index, order.id)
+      }));
+      
+      setProcessedOrders(ordersWithUniqueIds);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Erro ao processar arquivo');
       console.error('Erro:', err);
@@ -285,6 +299,16 @@ export function OrdersImport() {
     setIsIntegrating(true);
     setError(null);
 
+    // Marca todos os pedidos como pendentes
+    setProcessedOrders(orders => 
+      orders.map(order => ({
+        ...order,
+        integrationStatus: 'pending',
+        integrationCode: undefined,
+        integrationError: undefined
+      }))
+    );
+
     try {
       const response = await api.post('/orders/matrix-cargo', 
         processedOrders,
@@ -295,11 +319,59 @@ export function OrdersImport() {
           }
         }
       );
-      alert('Pedidos integrados com sucesso!');
-      setProcessedOrders([]);
-      setFile(null);
+
+      // Atualiza o status de cada pedido com base na resposta usando uniqueId
+      setProcessedOrders(orders => 
+        orders.map(order => {
+          // Procura o resultado correspondente pelo uniqueId
+          const successResult = response.data.results.find(r => r.uniqueId === order.uniqueId);
+          const errorResult = response.data.errors.find(e => e.uniqueId === order.uniqueId);
+          
+          if (successResult) {
+            return {
+              ...order,
+              integrationStatus: 'success',
+              integrationCode: successResult.result.code
+            };
+          }
+          
+          if (errorResult) {
+            return {
+              ...order,
+              integrationStatus: 'error',
+              integrationError: errorResult.error || 'Erro na integração'
+            };
+          }
+          
+          // Se não encontrou nenhum resultado, mantém como erro
+          return {
+            ...order,
+            integrationStatus: 'error',
+            integrationError: 'Não foi possível determinar o status da integração'
+          };
+        })
+      );
+
+      // Atualiza mensagem baseada no total de sucessos/falhas
+      const totalSuccess = response.data.success;
+      const totalFailed = response.data.failed;
+      
+      if (totalFailed === 0) {
+        alert('Todos os pedidos foram integrados com sucesso!');
+        setFile(null);
+      } else {
+        setError(`${totalFailed} pedido(s) falharam na integração. Verifique os detalhes na tabela.`);
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Erro ao integrar pedidos');
+      // Marca todos os pedidos como erro em caso de falha geral
+      setProcessedOrders(orders => 
+        orders.map(order => ({
+          ...order,
+          integrationStatus: 'error',
+          integrationError: 'Falha na integração'
+        }))
+      );
     } finally {
       setIsIntegrating(false);
     }
@@ -509,13 +581,13 @@ export function OrdersImport() {
                 </tr>
               </thead>
               <tbody>
-                {processedOrders.map((order, index) => {
+                {processedOrders.map((order) => {
                   const orderErrors = validateOrder(order);
                   const hasErrors = orderErrors.length > 0;
                   
                   return (
-                    <tr key={order.id} className={hasErrors ? 'invalid-order' : ''}>
-                      <td className="row-number">{index + 1}</td>
+                    <tr key={order.uniqueId} className={hasErrors ? 'invalid-order' : ''}>
+                      <td className="row-number">{processedOrders.indexOf(order) + 1}</td>
                       <td>
                         {order.id}
                         {hasErrors && (
@@ -565,6 +637,22 @@ export function OrdersImport() {
                           )}
                           {hasErrors && (
                             <span className="status-flag invalid">Inconformidade</span>
+                          )}
+                          {order.integrationStatus === 'pending' && (
+                            <span className="status-flag pending">
+                              <span className="loading-spinner"></span>
+                              Integrando...
+                            </span>
+                          )}
+                          {order.integrationStatus === 'success' && (
+                            <span className="status-flag success">
+                              ✓ {order.integrationCode}
+                            </span>
+                          )}
+                          {order.integrationStatus === 'error' && (
+                            <span className="status-flag error" title={order.integrationError}>
+                              ✕ Falha na integração
+                            </span>
                           )}
                         </div>
                       </td>
