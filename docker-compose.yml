@@ -24,7 +24,8 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - MATRIX_CARGO_API_URL=https://tracking-api.matrixcargo.com.br/api/v1/external/trip
+      - MATRIXCARGO_TRACKING_API_URL=https://tracking-api.matrixcargo.com.br/api/v1/external/trip
+      - MATRIXCARGO_PAINEL_LOGISTICO_API_URL=https://painel-logistico-api.matrixcargo.com.br/api/v1
       - DATABASE_URL=sqlite:///./app.db
 
 volumes:

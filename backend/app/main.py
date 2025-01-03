@@ -6,7 +6,8 @@ from pydantic import BaseModel
 import os
 from datetime import datetime, timezone, timedelta
 from .models import Trip
-from .external_api import ExternalAPIClient
+from .external_api import MatrixcargoTracking
+from .external_api import MatrixcargoPainelLogistico
 from sqlalchemy.orm import Session
 from fastapi import Depends
 from .database import get_db, IntegratedTrip
@@ -35,8 +36,8 @@ app.add_middleware(
 )
 
 # Add environment variables for Matrix Cargo API
-MATRIX_CARGO_API_URL = os.getenv('MATRIX_CARGO_API_URL', 'https://tracking-api.matrixcargo.com.br/api/v1/external')
-
+MATRIXCARGO_TRACKING_API_URL = os.getenv('MATRIXCARGO_TRACKING_API_URL', 'https://tracking-api.matrixcargo.com.br/api/v1/external')
+MATRIXCARGO_PAINEL_LOGISTICO_API_URL = os.getenv('MATRIXCARGO_PAINEL_LOGISTICO_API_URL', 'https://painel-logistico-api.matrixcargo.com.br/api/v1')
 # Adicione este modelo para a resposta paginada
 class PaginatedTrips(BaseModel):
     items: List[dict]
@@ -83,14 +84,17 @@ async def create_trip(trip: Trip):
 async def create_matrix_cargo_trip(
     trip: Trip, 
     db: Session = Depends(get_db),
-    authorization: str = Header(None)
+    authorization: str = Header(None),
+    organization_id: str = Header(None),
 ):
     if not authorization:
         raise HTTPException(status_code=401, detail="Token não fornecido")
-
+    
+    if not organization_id:
+        raise HTTPException(status_code=401, detail="Organization ID não fornecido")
     try:
         # Inicializar o client com o token recebido do frontend
-        matrix_cargo_client = ExternalAPIClient(MATRIX_CARGO_API_URL, authorization.replace('Bearer ', ''))
+        matrix_cargo_client = MatrixcargoTracking(MATRIXCARGO_TRACKING_API_URL, authorization.replace('Bearer ', ''), organization_id)
         
         # Generate a unique externalId in the specific format
         generated_external_id = f"{datetime.now().strftime('%H%M%S')}{random.randint(100,999)}"
@@ -196,6 +200,7 @@ async def create_matrix_cargo_trip(
         try:
             # Send to Matrix Cargo API
             result = await matrix_cargo_client.create_trip(matrix_cargo_data)
+            print(result)
             
             # Store the integration result with the generated externalId
             integrated_trip = IntegratedTrip(
@@ -310,7 +315,8 @@ async def upload_orders(file: UploadFile = File(...)):
                     try:
                         # Converte data do formato brasileiro para ISO
                         parsed_date = datetime.strptime(date_str, '%d/%m/%Y %H:%M')
-                        utc_date = pytz.UTC.localize(parsed_date)
+                        # Create a timezone-aware datetime by localizing to UTC
+                        utc_date = parsed_date.replace(tzinfo=timezone.utc)
                         return utc_date.isoformat()
                     except ValueError as e:
                         raise ValueError(f"Formato de data inválido. Use o formato DD/MM/YYYY HH:MM")
@@ -352,7 +358,7 @@ async def upload_orders(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(e))
 
 def transform_order_to_matrix_cargo_format(order: dict) -> dict:
-    """Transforma o pedido para o formato esperado pela API do Matrix Cargo"""
+    """Transforma o pedido para o formato esperado pela API do Matrixcargo Painel Logistico"""
     return {
         "externalId": order["id"],
         "cliente": {
@@ -388,35 +394,6 @@ def transform_order_to_matrix_cargo_format(order: dict) -> dict:
         }
     }
 
-@app.post("/orders/matrix-cargo")
-async def create_matrix_cargo_orders(
-    orders: List[dict],
-    authorization: str = Header(None)
-):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Token não fornecido")
-
-    try:
-        matrix_cargo_client = ExternalAPIClient(
-            MATRIX_CARGO_API_URL, 
-            authorization.replace('Bearer ', '')
-        )
-        
-        results = []
-        for order in orders:
-            matrix_cargo_order = transform_order_to_matrix_cargo_format(order)
-            result = await matrix_cargo_client.create_order(matrix_cargo_order)
-            results.append(result)
-            
-        return {"results": results}
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao criar pedidos no Matrix Cargo: {str(e)}"
-        )
-
-# Atualize os modelos Pydantic para conter apenas os campos necessários
 class Workspace(BaseModel):
     id: str
     name: str
@@ -428,6 +405,90 @@ class Organization(BaseModel):
 
 class OrganizationResponse(BaseModel):
     data: List[Organization]
+
+# Add new models for order validation
+class OrderRequest(BaseModel):
+    id: str
+    customerCNPJ: str
+    customerName: str
+    originCNPJ: str
+    originName: str
+    pickupDate: str
+    destinationCNPJ: str
+    destinationName: str
+    deliveryDate: str
+    itemCode: str
+    itemDescription: str
+    itemVolume: float
+    itemWeight: float
+    itemQuantity: int
+    itemUnit: str
+    itemUnitPrice: float
+    merchandiseType: str
+    isDangerous: bool
+    needsEscort: bool
+
+@app.post("/orders/matrix-cargo")
+async def create_matrix_cargo_orders(
+    orders: List[OrderRequest],
+    authorization: str = Header(None),
+    organization_id: str = Header(None, alias="Organization-Id"),
+    workspace_id: str = Header(None, alias="Workspace-Id")
+):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token não fornecido")
+    if not organization_id:
+        raise HTTPException(status_code=400, detail="Organization-Id header é obrigatório")
+    if not workspace_id:
+        raise HTTPException(status_code=400, detail="Workspace-Id header é obrigatório")
+
+    try:
+        # Removendo o Bearer se existir, pois já adicionamos na classe
+        token = authorization.replace('Bearer ', '')
+        
+        matrix_cargo_client = MatrixcargoPainelLogistico(
+            MATRIXCARGO_PAINEL_LOGISTICO_API_URL,
+            token,
+            organization_id,
+            workspace_id
+        )
+        
+        results = []
+        errors = []
+        
+        for order in orders:
+            try:
+                # Convertendo o modelo Pydantic para dict antes de transformar
+                order_dict = order.dict()
+                matrix_cargo_order = transform_order_to_matrix_cargo_format(order_dict)
+                result = await matrix_cargo_client.create_order(matrix_cargo_order)
+                results.append({
+                    "id": order.id,
+                    "status": "success",
+                    "result": result
+                })
+            except Exception as e:
+                print(f"Erro ao processar pedido {order.id}: {str(e)}")
+                errors.append({
+                    "id": order.id,
+                    "status": "error",
+                    "error": str(e)
+                })
+        
+        return {
+            "results": results,
+            "errors": errors,
+            "total": len(orders),
+            "success": len(results),
+            "failed": len(errors)
+        }
+        
+    except Exception as e:
+        print(f"Erro geral na integração: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao criar pedidos no Matrix Cargo: {str(e)}"
+        )
 
 @app.get(
     "/organizations",
@@ -510,4 +571,5 @@ async def get_organizations(
             status_code=500,
             detail=f"Erro interno do servidor: {str(e)}"
         )
+
 

@@ -286,11 +286,15 @@ export function OrdersImport() {
     setError(null);
 
     try {
-      const response = await api.post('/orders/matrix-cargo', {
-        orders: processedOrders,
-        organizationId: selectedOrganization,
-        workspaceId: selectedWorkspace
-      });
+      const response = await api.post('/orders/matrix-cargo', 
+        processedOrders,
+        {
+          headers: {
+            'Organization-Id': selectedOrganization,
+            'Workspace-Id': selectedWorkspace
+          }
+        }
+      );
       alert('Pedidos integrados com sucesso!');
       setProcessedOrders([]);
       setFile(null);
