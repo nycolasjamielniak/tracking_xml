@@ -212,6 +212,40 @@ function TripManager({ processedData, onTripGenerated }) {
   const [availableNotes, setAvailableNotes] = useState([])
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingStop, setEditingStop] = useState(null)
+  const [organizations, setOrganizations] = useState([])
+  const [selectedOrganization, setSelectedOrganization] = useState('')
+  const [selectedWorkspace, setSelectedWorkspace] = useState('')
+  const [isLoadingOrgs, setIsLoadingOrgs] = useState(false)
+  const [error, setError] = useState(null)
+
+  // Add fetchOrganizations function
+  const fetchOrganizations = async () => {
+    setIsLoadingOrgs(true);
+    try {
+      const response = await api.get('/organizations');
+      setOrganizations(response.data.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao buscar organizações');
+    } finally {
+      setIsLoadingOrgs(false);
+    }
+  };
+
+  // Add useEffect for fetching organizations
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
+  // Add useEffect for resetting workspace when organization changes
+  useEffect(() => {
+    setSelectedWorkspace('');
+  }, [selectedOrganization]);
+
+  // Add helper function to get workspaces
+  const getSelectedOrgWorkspaces = () => {
+    const org = organizations.find(org => org.id === selectedOrganization);
+    return org?.workspaces || [];
+  };
 
   const handleCreateTrip = () => {
     const newTrip = {
@@ -547,8 +581,22 @@ function TripManager({ processedData, onTripGenerated }) {
       return;
     }
 
+    if (!selectedOrganization) {
+      setError('Por favor, selecione uma organização');
+      return;
+    }
+    if (!selectedWorkspace) {
+      setError('Por favor, selecione um workspace');
+      return;
+    }
+
     try {
-      const response = await api.post('/trips/matrix-cargo', currentTrip);
+      const response = await api.post('/trips/matrix-cargo', currentTrip, {
+        headers: {
+          'Organization-Id': selectedOrganization,
+          'Workspace-Id': selectedWorkspace
+        }
+      });
       
       // Coleta os IDs das notas usadas nesta viagem
       const usedNoteIds = currentTrip.stops.flatMap(stop => 
@@ -623,16 +671,62 @@ function TripManager({ processedData, onTripGenerated }) {
         </div>
       </div>
 
+      {/* Add organization selection */}
+      <div className="organization-selection">
+        {organizations.length > 0 && (
+          <>
+            <div className="select-container">
+              <label htmlFor="organization-select">Organização </label>
+              <select
+                id="organization-select"
+                value={selectedOrganization}
+                onChange={(e) => setSelectedOrganization(e.target.value)}
+                className="organization-select2"
+                disabled={isLoadingOrgs}
+              >
+                <option value="">Selecione uma organização</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedOrganization && (
+              <div className="select-container">
+                <label htmlFor="workspace-select">Workspace </label>
+                <select
+                  id="workspace-select"
+                  value={selectedWorkspace}
+                  onChange={(e) => setSelectedWorkspace(e.target.value)}
+                  className="workspace-select"
+                >
+                  <option value="">Selecione um workspace</option>
+                  {getSelectedOrgWorkspaces().map((workspace) => (
+                    <option key={workspace.id} value={workspace.id}>
+                      {workspace.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Add Matrix Cargo button near the trip info section */}
       <div className="trip-actions">
         <button
           className="matrix-cargo-button"
           onClick={handleGenerateMatrixCargoTrip}
-          disabled={!validateTripData()}
+          disabled={!validateTripData() || !selectedOrganization || !selectedWorkspace}
         >
           Gerar Viagem Matrix Cargo
         </button>
       </div>
+
+      {error && <p className="error">{error}</p>}
 
       {/* Container para o conteúdo abaixo do header */}
       <div className="trip-content">

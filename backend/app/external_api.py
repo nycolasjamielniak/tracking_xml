@@ -3,14 +3,17 @@ import httpx
 from fastapi import HTTPException
 
 class MatrixcargoTracking:
-    def __init__(self, base_url: str, api_key: str, organization_id: str):
-        self.base_url = base_url,
+    def __init__(self, base_url: str, api_key: str, organization_id: str, workspace_id: str = None):
+        self.base_url = base_url
         self.headers = {
-            "Authorization": api_key,
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "x-organization": "18256896-08b6-4ab4-8665-f861f8c70a87",
-            "x-organization-key": "18256896-08b6-4ab4-8665-f861f8c70a87"
+            "Accept": "application/json",
+            "x-organization": organization_id,
+            "X-Organization-Key": organization_id
         }
+        if workspace_id:
+            self.headers["X-Workspace-Key"] = workspace_id
 
     async def create_trip(self, trip_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -18,11 +21,17 @@ class MatrixcargoTracking:
         """
         async with httpx.AsyncClient() as client:
             try:
+                print(f"Enviando requisição para: {self.base_url}")
+                print(f"Headers: {self.headers}")
+                
                 response = await client.post(
                     self.base_url,
                     json=trip_data,
                     headers=self.headers
                 )
+
+                print(f"Status code: {response.status_code}")
+                print(f"Response: {response.text}")
 
                 if response.status_code in (200, 201):
                     return response.json()

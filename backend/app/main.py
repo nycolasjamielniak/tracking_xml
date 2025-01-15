@@ -85,33 +85,22 @@ async def create_matrix_cargo_trip(
     trip: Trip, 
     db: Session = Depends(get_db),
     authorization: str = Header(None),
-    organization_id: str = Header(None),
+    organization_id: str = Header(None, alias="Organization-Id"),
+    workspace_id: str = Header(None, alias="Workspace-Id")
 ):
     if not authorization:
         raise HTTPException(status_code=401, detail="Token não fornecido")
     
     if not organization_id:
         raise HTTPException(status_code=401, detail="Organization ID não fornecido")
+
+    if not workspace_id:
+        raise HTTPException(status_code=401, detail="Workspace ID não fornecido")
+
     try:
-        # Inicializar o client com o token recebido do frontend
-        matrix_cargo_client = MatrixcargoTracking(MATRIXCARGO_TRACKING_API_URL, authorization.replace('Bearer ', ''), organization_id)
-        
         # Generate a unique externalId in the specific format
-        generated_external_id = f"{datetime.now().strftime('%H%M%S')}{random.randint(100,999)}"
-        
-        existing_trip = db.query(IntegratedTrip).filter(
-            IntegratedTrip.external_id == generated_external_id
-        ).first()
-        
-        if existing_trip:
-            if existing_trip.status == 'success':
-                return {
-                    "externalId": existing_trip.external_id,
-                    "matrix_cargo_response": existing_trip.matrix_cargo_response
-                }
-            # If previous attempt failed, update the existing record
-            db.delete(existing_trip)
-            db.commit()
+        timestamp = datetime.now()
+        generated_external_id = f"{timestamp.strftime('%Y%m%d%H%M%S')}{random.randint(1000,9999)}"
 
         # Transform trip data to Matrix Cargo format
         matrix_cargo_data = {
@@ -126,6 +115,7 @@ async def create_matrix_cargo_trip(
                 "email": "contact2@matrixcargo.com"
             },
             "workspace": {
+                "id": workspace_id,
                 "name": "Operação"
             },
             "customer": {
@@ -197,12 +187,25 @@ async def create_matrix_cargo_trip(
             ]
         }
 
+        print(f"Dados preparados para envio: {json.dumps(matrix_cargo_data, indent=2)}")
+
         try:
-            # Send to Matrix Cargo API
+            # Inicializar o client com o token recebido do frontend
+
+            token = authorization.replace('Bearer ', '')
+
+            matrix_cargo_client = MatrixcargoTracking(
+                MATRIXCARGO_TRACKING_API_URL, 
+                token, 
+                organization_id,
+                workspace_id
+            )
+
+            # Primeiro tenta enviar para a Matrix Cargo
             result = await matrix_cargo_client.create_trip(matrix_cargo_data)
-            print(result)
+            print(f"Resposta da Matrix Cargo: {result}")
             
-            # Store the integration result with the generated externalId
+            # Se chegou aqui, deu sucesso. Agora salva no banco
             integrated_trip = IntegratedTrip(
                 external_id=generated_external_id,
                 trip_data=json.loads(trip.json()),
@@ -218,22 +221,31 @@ async def create_matrix_cargo_trip(
             }
 
         except HTTPException as api_error:
-            # Store the failure with the generated externalId
+            error_detail = str(api_error.detail)
+            print(f"Erro na API da Matrix Cargo: {error_detail}")
+            
+            # Se falhou na Matrix Cargo, salva o erro no banco
             integrated_trip = IntegratedTrip(
                 external_id=generated_external_id,
                 trip_data=json.loads(trip.json()),
                 status='error',
-                error_message=str(api_error.detail)
+                error_message=error_detail
             )
             db.add(integrated_trip)
             db.commit()
             
-            raise
+            raise HTTPException(
+                status_code=api_error.status_code,
+                detail=f"Erro na integração com Matrix Cargo: {error_detail}"
+            )
 
     except Exception as e:
-        # Store failed integration attempt with the generated externalId
+        import traceback
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        print(f"Erro não tratado: {error_msg}")
+        
+        # Erro geral - tenta salvar no banco, mas não falha se não conseguir
         try:
-            error_msg = str(e)
             integrated_trip = IntegratedTrip(
                 external_id=generated_external_id,
                 trip_data=json.loads(trip.json()),
@@ -247,7 +259,7 @@ async def create_matrix_cargo_trip(
         
         raise HTTPException(
             status_code=500,
-            detail=f"Erro ao criar viagem no Matrix Cargo: {error_msg}"
+            detail=f"Erro ao processar viagem: {error_msg}"
         )
 
 def serialize_sqlalchemy(obj: Any) -> Any:
