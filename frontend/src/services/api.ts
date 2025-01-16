@@ -2,7 +2,8 @@ import axios, { InternalAxiosRequestConfig } from 'axios';
 import { authService } from './auth';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  //baseURL: 'http://localhost:8000',
+  baseURL: 'https://facilitador-api.matrixcargo.com.br',
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {

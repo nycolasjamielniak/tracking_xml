@@ -2,8 +2,8 @@ import axios from 'axios';
 import { authService } from './auth'; // Ajuste o caminho para onde seu authService está
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  //baseURL: 'https://facilitador-api.matrixcargo.com.br'
+  //baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  baseURL: 'https://facilitador-api.matrixcargo.com.br'
 });
 
 // Adicionar o interceptor de request
