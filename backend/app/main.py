@@ -30,7 +30,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     #allow_origins=["http://localhost:5173"],
-    allow_origins=["https://facilitador-api.matrixcargo.com.br"],
+    allow_origins=["https://facilitador.matrixcargo.com.br"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
